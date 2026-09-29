@@ -339,10 +339,11 @@
   <div class="overlay-card">
     <h2>Benvenuto in Registro Ore</h2>
     <p>Questo link può essere usato da più persone: ognuno ha il proprio calendario delle ore, separato da quello degli altri.</p>
-    <button id="obTommi" class="btn-ob primary" type="button">Sono Tommi, apri il mio registro</button>
-    <div class="ob-sep">oppure</div>
     <label>Il tuo nome (facoltativo)<input id="obNome" type="text" placeholder="Es. Marco" autocomplete="off"></label>
-    <button id="obNuovo" class="btn-ob" type="button">Crea la mia area personale, vuota</button>
+    <button id="obNuovo" class="btn-ob primary" type="button">Crea la mia area personale, vuota</button>
+    <div class="ob-sep">oppure, se hai già un'area</div>
+    <div class="code-row"><input id="obCodice" type="text" placeholder="codice" autocomplete="off"><button id="obEntra" type="button">Entra</button></div>
+    <p id="obErrore" style="display:none;color:var(--terracotta);margin:6px 0 0;"></p>
   </div>
 </div>
 
@@ -350,8 +351,11 @@
   <div class="overlay-card">
     <h2>Impostazioni</h2>
     <label>Il tuo nome<input id="setNome" type="text" placeholder="Es. Marco" autocomplete="off"></label>
-    <p>Codice di quest'area: ti serve solo se un giorno devi ritrovarla su un altro telefono.</p>
-    <div class="code-row"><code id="setCodice">—</code><button id="setCopia" type="button">Copia</button></div>
+    <div id="setCodiceBox">
+      <p>Codice di quest'area: ti serve solo se un giorno devi ritrovarla su un altro telefono.</p>
+      <div class="code-row"><code id="setCodice">—</code><button id="setCopia" type="button">Copia</button></div>
+    </div>
+    <p id="setCodiceProtetta" style="display:none">Quest'area è protetta da un codice segreto che conosci solo tu.</p>
     <p>Hai un codice che ti ha dato qualcun altro? Scrivilo qui per entrare nella sua area.</p>
     <div class="code-row"><input id="setJoinCode" type="text" placeholder="codice" autocomplete="off"><button id="setJoin" type="button">Entra</button></div>
     <button id="setClose" class="btn-ob primary" type="button">Chiudi</button>
@@ -371,7 +375,11 @@
   var API_KEY = firebaseConfig.apiKey;
   var API_BASE = 'https://firestore.googleapis.com/v1/projects/' + PROJECT_ID + '/databases/(default)/documents';
   var DOC_PATH = '/ore/dati';
+  // "tommi-principale" è un nome interno, non un codice segreto: si può ottenere
+  // SOLO passando l'hash qui sotto (chi legge il codice pubblico su GitHub vede
+  // l'hash, non il codice vero, e non può risalire al registro di Tommi).
   var CODICE_TOMMI = 'tommi-principale';
+  var HASH_TOMMI = 'd93a2de678c67f52c57c04db1dadb037483eb8b1145449f45f408c716a9f4bda';
   var codiceArea = null;
 
   function generaCodice(){
@@ -380,9 +388,25 @@
     for (var i = 0; i < 6; i++) s += chars.charAt(Math.floor(Math.random() * chars.length));
     return s;
   }
+  function sha256Hex(testo){
+    var enc = new TextEncoder().encode(testo);
+    return crypto.subtle.digest('SHA-256', enc).then(function(buf){
+      return Array.prototype.map.call(new Uint8Array(buf), function(b){ return b.toString(16).padStart(2, '0'); }).join('');
+    });
+  }
   function setAreaPath(codice){
     codiceArea = codice;
     DOC_PATH = (codice === CODICE_TOMMI) ? '/ore/dati' : ('/liste/' + encodeURIComponent(codice) + '/ore/dati');
+  }
+  // Risolve un codice scritto a mano: se è il codice segreto di Tommi (verificato
+  // per hash, mai confrontato in chiaro) entra nel suo registro; altrimenti è
+  // trattato come il codice "normale" di un'area personale di un dipendente.
+  function risolviCodiceInserito(testo){
+    var v = (testo || '').trim().toLowerCase();
+    if (!v) return Promise.resolve(null);
+    return sha256Hex(v).then(function(hash){
+      return (hash === HASH_TOMMI) ? CODICE_TOMMI : v;
+    });
   }
   function nomeSalvato(){
     try{ return localStorage.getItem('ore_nome') || ''; }catch(e){ return ''; }
@@ -1120,13 +1144,6 @@
   var onboardEl = document.getElementById('onboard');
   var settingsEl = document.getElementById('settingsPanel');
 
-  document.getElementById('obTommi').addEventListener('click', function(){
-    try{ localStorage.setItem('ore_area_codice', CODICE_TOMMI); }catch(e){}
-    setAreaPath(CODICE_TOMMI);
-    onboardEl.style.display = 'none';
-    aggiornaTitolo();
-    initStorage();
-  });
   document.getElementById('obNuovo').addEventListener('click', function(){
     var nome = document.getElementById('obNome').value.trim();
     if (nome) salvaNome(nome);
@@ -1137,9 +1154,31 @@
     aggiornaTitolo();
     initStorage();
   });
+  document.getElementById('obEntra').addEventListener('click', function(){
+    var campo = document.getElementById('obCodice');
+    var errore = document.getElementById('obErrore');
+    errore.style.display = 'none';
+    var testo = campo.value;
+    if (!testo.trim()) return;
+    risolviCodiceInserito(testo).then(function(codice){
+      var nome = document.getElementById('obNome').value.trim();
+      if (nome) salvaNome(nome);
+      try{ localStorage.setItem('ore_area_codice', codice); }catch(e){}
+      setAreaPath(codice);
+      onboardEl.style.display = 'none';
+      aggiornaTitolo();
+      initStorage();
+    }).catch(function(){
+      errore.textContent = 'Non sono riuscito a controllare il codice, riprova.';
+      errore.style.display = 'block';
+    });
+  });
 
   document.getElementById('btnSettings').addEventListener('click', function(){
     document.getElementById('setNome').value = nomeSalvato();
+    var eProtetta = codiceArea === CODICE_TOMMI;
+    document.getElementById('setCodiceBox').style.display = eProtetta ? 'none' : '';
+    document.getElementById('setCodiceProtetta').style.display = eProtetta ? 'block' : 'none';
     document.getElementById('setCodice').textContent = codiceArea || '—';
     document.getElementById('setJoinCode').value = '';
     settingsEl.style.display = 'flex';
@@ -1157,18 +1196,21 @@
     else fatto();
   });
   document.getElementById('setJoin').addEventListener('click', function(){
-    var v = document.getElementById('setJoinCode').value.trim().toLowerCase();
-    if (!v) return;
-    if (!confirm('Passare all’area con codice "' + v + '"? Per tornare a questa che vedi ora ti basterà reinserire il codice "' + (codiceArea || '') + '" da qui.')) return;
-    try{ localStorage.setItem('ore_area_codice', v); }catch(e){}
-    setAreaPath(v);
-    settingsEl.style.display = 'none';
-    clearInterval(pollTimer);
-    seeded = false; loaded = false; saveState = 'idle'; pendingSave = false;
-    data = {};
-    current = { y: today.getFullYear(), m: today.getMonth() };
-    renderCalendar();
-    initStorage();
+    var campo = document.getElementById('setJoinCode');
+    var testo = campo.value;
+    if (!testo.trim()) return;
+    risolviCodiceInserito(testo).then(function(codice){
+      if (!confirm('Passare a quest’altra area? Per tornare a quella che vedi ora ti basterà reinserire il codice "' + (codiceArea || '') + '" da qui.')) return;
+      try{ localStorage.setItem('ore_area_codice', codice); }catch(e){}
+      setAreaPath(codice);
+      settingsEl.style.display = 'none';
+      clearInterval(pollTimer);
+      seeded = false; loaded = false; saveState = 'idle'; pendingSave = false;
+      data = {};
+      current = { y: today.getFullYear(), m: today.getMonth() };
+      renderCalendar();
+      initStorage();
+    });
   });
 
   var codiceSalvato = null;
