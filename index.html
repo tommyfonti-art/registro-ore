@@ -1,0 +1,1038 @@
+<!doctype html><html lang="it"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"><title>Registro Ore</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet"><style id="css">
+  :root{
+    --paper:#F2E8D3;
+    --ink:#211F1A;
+    --ink-soft:#6B6353;
+    --rule:rgba(33,31,26,0.20);
+    --rule-strong:rgba(33,31,26,0.40);
+    --teal:#1F6F52;
+    --teal-tint:#DCEBDF;
+    --terracotta:#B23A2E;
+    --terracotta-tint:#F4DAD5;
+    --off:#1E6FA8;
+    --off-tint:#D9E9F4;
+    --mattina:#C96A3B;
+    --mattina-tint:#F6E1CF;
+    box-sizing:border-box;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html{ scroll-padding-top: env(safe-area-inset-top, 0px); height:100%; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    line-height:1.4;
+    -webkit-font-smoothing:antialiased;
+    padding-top:env(safe-area-inset-top, 0px);
+    padding-bottom:env(safe-area-inset-bottom, 24px);
+    min-height:100%;
+  }
+  .wrap{ max-width:520px; margin:0 auto; padding:14px 14px 40px; }
+
+  h1{ font-family:'Fraunces', serif; font-weight:500; font-size:20px; margin:0; }
+
+  header.top{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:12px;
+  }
+  .sync-dot{
+    display:inline-block; width:7px; height:7px; border-radius:50%;
+    background:var(--rule-strong); margin-left:8px; vertical-align:middle;
+    transition:background .2s;
+  }
+  .sync-dot.ok{ background:var(--teal); }
+  .sync-dot.off{ background:var(--terracotta); }
+  .mode-switch{
+    border:1px solid var(--rule-strong);
+    display:flex;
+    font-size:11px;
+  }
+  .mode-switch button{
+    background:none; border:none; color:var(--ink-soft);
+    font-family:'IBM Plex Mono', monospace;
+    padding:7px 10px; cursor:pointer;
+  }
+  .mode-switch button.active{ background:var(--ink); color:var(--paper); }
+
+  .month-nav{
+    display:flex; align-items:center; justify-content:space-between;
+    border-top:1px solid var(--rule-strong);
+    border-bottom:1px solid var(--rule-strong);
+    padding:8px 0;
+    margin-bottom:10px;
+  }
+  .month-nav button{
+    background:none; border:1px solid var(--rule-strong); color:var(--ink);
+    width:30px; height:30px; font-size:15px; cursor:pointer;
+  }
+  .month-nav h2{
+    font-family:'Fraunces', serif; font-weight:500; font-size:17px; margin:0;
+    text-transform:capitalize;
+  }
+
+  .summary{
+    margin-bottom:14px;
+  }
+  .summary .total{
+    display:flex; align-items:baseline; justify-content:space-between;
+  }
+  .summary .total .num{ font-family:'Fraunces', serif; font-size:34px; font-weight:500; }
+  .summary .total .lbl{ font-size:12px; color:var(--ink-soft); }
+  .summary .breakdown{
+    display:flex; gap:16px; margin-top:4px; font-size:11.5px; color:var(--ink-soft);
+    flex-wrap:wrap;
+  }
+  .summary .breakdown b{ color:var(--ink); font-weight:600; }
+
+  .col-heads{
+    display:flex; padding:4px 2px; font-size:10.5px; color:var(--ink-soft);
+    border-bottom:1px solid var(--rule);
+  }
+  .col-heads .c-date{ width:52px; }
+  .col-heads .c-mid{ flex:1; }
+  .col-heads .c-res{ width:56px; text-align:right; }
+
+  .list{ }
+  .row{
+    display:flex; align-items:flex-start;
+    padding:8px 2px;
+    border-bottom:1px solid var(--rule);
+    border-left:3px solid transparent;
+    gap:6px;
+  }
+  .row.is-today{ background:rgba(128,128,128,0.08); }
+  .row.has-lavorato{ border-left-color:var(--teal); }
+  .row.has-ferie{ border-left-color:var(--terracotta); background:var(--terracotta-tint); }
+  .row.has-off{ border-left-color:var(--off); background:var(--off-tint); }
+  .row.has-mattina{ border-left-color:var(--mattina); background:var(--mattina-tint); }
+
+  .row .date{ width:52px; flex-shrink:0; padding-top:1px; }
+  .row .date .dow{ display:block; font-size:11px; color:var(--ink-soft); text-transform:capitalize; font-weight:500; }
+  .row .date .num{ font-size:14.5px; font-weight:600; }
+
+  .row .mid{ flex:1; min-width:0; }
+  .row .result{ width:56px; flex-shrink:0; text-align:right; font-family:'Fraunces', serif; font-weight:600; font-size:15.5px; padding-top:1px; }
+  .row.has-ferie .result{ color:var(--terracotta); }
+  .row.has-off .result{ color:var(--off); }
+  .row.has-mattina .result{ color:var(--mattina); }
+  .row.has-lavorato .result{ color:var(--teal); }
+
+  /* edit-mode controls */
+  .edit-line{ display:flex; flex-direction:column; gap:6px; flex:1; min-width:0; }
+  .edit-top{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .status-chk{ display:flex; align-items:center; gap:4px; font-size:11.5px; font-weight:500; color:var(--ink-soft); flex-shrink:0; }
+  .status-chk input{ width:16px; height:16px; margin:0; }
+  .status-chk.ferie-chk input{ accent-color:var(--terracotta); }
+  .status-chk.off-chk input{ accent-color:var(--off); }
+  .status-chk.mattina-chk input{ accent-color:var(--mattina); }
+  .edit-bottom{ display:flex; align-items:center; gap:8px; }
+  .inputs{ display:flex; align-items:center; gap:8px; flex:1; min-width:0; }
+  .time-group{ display:flex; align-items:center; gap:6px; }
+  .or-sep{ font-size:10.5px; color:var(--ink-soft); flex-shrink:0; }
+  .ore-group{ display:flex; align-items:center; gap:4px; flex-shrink:0; }
+  .time-group.is-disabled, .ore-group.is-disabled{ opacity:0.35; }
+  .inputs input.time-input{
+    font-family:'IBM Plex Mono', monospace; font-size:17px; font-weight:600; border:1px solid var(--rule-strong);
+    background:var(--paper); color:var(--ink); padding:5px 4px; width:64px; min-width:0;
+    text-align:center; letter-spacing:0.5px;
+  }
+  .inputs input.time-input:disabled{ background:rgba(128,128,128,0.08); color:var(--ink-soft); cursor:not-allowed; }
+  .inputs .sep{ color:var(--ink-soft); font-size:12px; flex-shrink:0; }
+  .inputs input.ore-input{
+    font-family:'IBM Plex Mono', monospace; font-size:17px; font-weight:600; border:1px solid var(--rule-strong);
+    background:var(--paper); color:var(--ink); padding:5px 6px; width:64px;
+  }
+  .inputs input.ore-input:disabled{ background:rgba(128,128,128,0.08); color:var(--ink-soft); cursor:not-allowed; }
+  .inputs .unit{ font-size:12px; color:var(--ink-soft); flex-shrink:0; }
+  /* niente frecce sui campi numerici, per sicurezza */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+  input[type="number"]{ -moz-appearance:textfield; }
+  .clear-btn{
+    background:none; border:none; color:var(--ink-soft); font-size:14px; cursor:pointer;
+    padding:2px 4px; flex-shrink:0; visibility:hidden;
+  }
+  .row.has-lavorato .clear-btn, .row.has-ferie .clear-btn, .row.has-off .clear-btn{ visibility:visible; }
+
+  /* static (summary/screenshot) line */
+  .static-line{ display:none; font-size:13.5px; font-weight:500; color:var(--ink); }
+  .static-line .tag{ font-weight:600; }
+  .static-line .tag.tag-ferie{ color:var(--terracotta); }
+  .static-line .tag.tag-off{ color:var(--off); }
+  .static-line .tag.tag-mattina{ color:var(--mattina); }
+  .static-line .muted{ color:var(--ink-soft); font-weight:400; }
+
+  body.summary-mode .edit-line{ display:none; }
+  body.summary-mode .static-line{ display:block; }
+  body.summary-mode .col-heads{ display:none; }
+  body.summary-mode .row{ padding:5px 2px; }
+
+  .footer-actions{ margin-top:16px; text-align:center; display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
+  .link-btn{
+    background:none; border:none; color:var(--ink-soft);
+    font-family:'IBM Plex Mono', monospace; font-size:11.5px;
+    text-decoration:underline; cursor:pointer; padding:4px;
+  }
+  .link-btn:hover{ color:var(--ink); }
+  .footer-note, .status{ text-align:center; font-size:10.5px; color:var(--ink-soft); margin-top:8px; min-height:14px; }
+
+  .year-total{ margin:6px 0 14px; }
+  .year-total .num{ font-family:'Fraunces', serif; font-size:30px; font-weight:500; }
+  .year-total .lbl{ font-size:12px; color:var(--ink-soft); }
+  .year-row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:9px 2px; border-bottom:1px solid var(--rule);
+  }
+  .year-row.is-current-month{ background:rgba(128,128,128,0.08); }
+  .year-row .ym-name{ font-size:14px; text-transform:capitalize; font-weight:500; }
+  .year-row .ym-detail{ font-size:10.5px; color:var(--ink-soft); margin-top:1px; }
+  .year-row .ym-total{ font-family:'Fraunces', serif; font-weight:600; font-size:16.5px; color:var(--teal); flex-shrink:0; }
+  .year-row.is-empty .ym-total{ color:var(--ink-soft); }
+
+  .save-badge{
+    position:fixed; left:0; right:0; bottom:0;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    padding:10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
+    font-family:'IBM Plex Mono', monospace; font-size:12.5px; font-weight:600;
+    background:var(--ink-soft); color:var(--paper);
+    transform:translateY(100%); transition:transform .18s ease, background .18s ease;
+    z-index:20;
+  }
+  .save-badge.show{ transform:translateY(0); }
+  .save-badge.pending{ background:var(--mattina); color:#2A1D0E; }
+  .save-badge.ok{ background:var(--teal); color:#F2FBF6; }
+  .save-badge.error, .save-badge.readonly{ background:var(--terracotta); color:#FBEAE6; }
+  .save-badge .dot{
+    width:8px; height:8px; border-radius:50%; background:currentColor; flex-shrink:0;
+  }
+  .save-badge.pending .dot{ animation:pulse 0.9s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{ opacity:1; } 50%{ opacity:.35; } }
+  body{ padding-bottom: calc(env(safe-area-inset-bottom, 24px) + 40px); }
+
+  @media print{
+    body{ background:#fff; padding-bottom:0; }
+    .wrap{ max-width:100%; padding:0; }
+    .mode-switch, .month-nav button, .footer-actions, .col-heads, .footer-note, .status{ display:none; }
+    .month-nav{ border-top:none; justify-content:center; padding:0 0 10px; }
+    .edit-line{ display:none; }
+    .static-line{ display:block; }
+    .row{ break-inside:avoid; border-left-width:3px; }
+    .row.has-ferie{ background:var(--terracotta-tint) !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    .row.has-off{ background:var(--off-tint) !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    .row.has-mattina{ background:var(--mattina-tint) !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  }
+</style></head><body><div id="page">
+<div class="wrap">
+  <header class="top">
+    <h1>Registro Ore<span class="sync-dot" id="syncDot"></span></h1>
+    <div class="mode-switch">
+      <button id="btnEdit" class="active">Modifica</button>
+      <button id="btnSummary">Riepilogo</button>
+      <button id="btnYear">Anno</button>
+    </div>
+  </header>
+
+  <div id="monthView">
+  <div class="month-nav">
+    <button id="prevMonth" aria-label="Mese precedente">‹</button>
+    <h2 id="monthLabel">—</h2>
+    <button id="nextMonth" aria-label="Mese successivo">›</button>
+  </div>
+
+  <div class="summary">
+    <div class="total">
+      <div>
+        <div class="num" id="statTotale">0,0 h</div>
+        <div class="lbl">ore totali del mese</div>
+      </div>
+    </div>
+    <div class="breakdown">
+      <span>lavorate: <b id="statLavorate">0,0 h</b></span>
+      <span>ferie: <b id="statFerie">0,0 h</b> (<b id="statGiorniFerie">0</b> gg)</span>
+      <span>mattina: <b id="statGiorniMattina">0</b> gg</span>
+      <span>off: <b id="statGiorniOff">0</b> gg</span>
+    </div>
+  </div>
+
+  <div class="col-heads">
+    <span class="c-date">Giorno</span>
+    <span class="c-mid">Orario / ferie / off / mattina</span>
+    <span class="c-res">Ore</span>
+  </div>
+
+  <div class="list" id="list"></div>
+  </div>
+
+  <div id="yearView" style="display:none">
+    <div class="month-nav">
+      <button id="prevYear" aria-label="Anno precedente">‹</button>
+      <h2 id="yearLabel">—</h2>
+      <button id="nextYear" aria-label="Anno successivo">›</button>
+    </div>
+    <div class="year-total" id="yearTotal"></div>
+    <div class="year-table" id="yearTable"></div>
+  </div>
+
+  <div class="footer-actions">
+    <button class="link-btn" id="exportPdf">Esporta in PDF</button>
+    <button class="link-btn" id="exportCsv">Esporta il mese in CSV</button>
+    <button class="link-btn" id="exportBackup">Salva backup dati</button>
+    <button class="link-btn" id="importBackup">Carica backup dati</button>
+    <input type="file" id="importFile" accept="application/json" style="display:none">
+  </div>
+  <p class="status" id="saveStatus" role="status" style="display:none"></p>
+</div>
+
+<div class="save-badge" id="saveBadge"><span class="dot"></span><span id="saveBadgeText">Salvataggio…</span></div>
+</div><script id="dati-iniziali" type="application/json">{"2026-09-01":{"tipo":"ferie","inizio":"","fine":"","oreTotali":"6"},"2026-09-02":{"tipo":"ferie","inizio":"","fine":"","oreTotali":"6"},"2026-09-03":{"tipo":null,"inizio":"","fine":"","oreTotali":"6,5"},"2026-09-04":{"tipo":null,"inizio":"","fine":"","oreTotali":"7"},"2026-09-05":{"tipo":null,"inizio":"","fine":"","oreTotali":"7,5"},"2026-09-06":{"tipo":null,"inizio":"","fine":"","oreTotali":"5,5"},"2026-09-07":{"tipo":null,"inizio":"","fine":"","oreTotali":"5,5"},"2026-09-08":{"tipo":null,"inizio":"","fine":"","oreTotali":"9"},"2026-09-09":{"tipo":null,"inizio":"","fine":"","oreTotali":"7"},"2026-09-10":{"tipo":null,"inizio":"","fine":"","oreTotali":"7,5"},"2026-09-11":{"tipo":null,"inizio":"","fine":"","oreTotali":"7"},"2026-09-12":{"tipo":null,"inizio":"","fine":"","oreTotali":"7"},"2026-09-13":{"tipo":"ferie","inizio":"","fine":"","oreTotali":"5,5"},"2026-09-14":{"tipo":"ferie","inizio":"","fine":"","oreTotali":"6"},"2026-09-15":{"tipo":"off","inizio":"","fine":"","oreTotali":""},"2026-09-16":{"tipo":"ferie","inizio":"","fine":"","oreTotali":"6"},"2026-09-17":{"tipo":"ferie","inizio":"","fine":"","oreTotali":"6"},"2026-09-18":{"tipo":"ferie","inizio":"","fine":"","oreTotali":"7"},"2026-09-20":{"tipo":"ferie","inizio":"","fine":"","oreTotali":"5,5"},"2026-09-19":{"tipo":"ferie","inizio":"","fine":"","oreTotali":"7"},"2026-09-21":{"tipo":"off","inizio":"","fine":"","oreTotali":""},"2026-09-22":{"tipo":null,"inizio":"18:30","fine":"00:30","oreTotali":""},"2026-09-23":{"tipo":"mattina","inizio":"08:00","fine":"18:00","oreTotali":""},"2026-09-24":{"tipo":null,"inizio":"18:30","fine":"00:30","oreTotali":""},"2026-09-25":{"tipo":null,"inizio":"18:00","fine":"01:00","oreTotali":""},"2026-09-26":{"tipo":null,"inizio":"18:00","fine":"01:30","oreTotali":""},"2026-09-27":{"tipo":null,"inizio":"18:00","fine":"00:00","oreTotali":""},"2026-09-30":{"tipo":"mattina","inizio":"","fine":"","oreTotali":""},"2026-09-28":{"tipo":"off","inizio":"","fine":"","oreTotali":""},"2026-09-29":{"tipo":null,"inizio":"18:30","fine":"00:30","oreTotali":""},"2026-10-04":{"tipo":"ferie","inizio":"18:00","fine":"00:00","oreTotali":""},"2026-10-18":{"tipo":"ferie","inizio":"18:00","fine":"00","oreTotali":""},"2026-10-05":{"tipo":"off","inizio":"","fine":"","oreTotali":""},"2026-10-19":{"tipo":"off","inizio":"","fine":"","oreTotali":""}}</script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><script id="main">
+(function(){
+  var firebaseConfig = {
+    apiKey: "AIzaSyBf_L7I710y1uCfqexrRS2A7fa1AIeQdPM",
+    authDomain: "spesa-b6ed3.firebaseapp.com",
+    projectId: "spesa-b6ed3",
+    storageBucket: "spesa-b6ed3.firebasestorage.app",
+    messagingSenderId: "85578996832",
+    appId: "1:85578996832:web:97e9f2926410e13cda3705"
+  };
+  var PROJECT_ID = firebaseConfig.projectId;
+  var API_KEY = firebaseConfig.apiKey;
+  var API_BASE = 'https://firestore.googleapis.com/v1/projects/' + PROJECT_ID + '/databases/(default)/documents';
+  var DOC_PATH = '/ore/dati';
+
+  var data = {};
+  var statusEl = null;
+  var syncDotEl = null;
+
+  // ---- Firestore via REST (niente SDK, per evitare i problemi dei canali di streaming) ----
+  function fsFetch(path, opts, ms){
+    opts = opts || {};
+    var sep = path.indexOf('?') > -1 ? '&' : '?';
+    var url = API_BASE + path + sep + 'key=' + API_KEY;
+    var ctrl = new AbortController();
+    var timer = setTimeout(function(){ ctrl.abort(); }, ms || 12000);
+    return fetch(url, Object.assign({}, opts, { signal: ctrl.signal }))
+      .then(function(res){
+        clearTimeout(timer);
+        if(!res.ok){
+          if(res.status === 404){
+            var e404 = new Error('not-found'); e404.code = 'not-found'; throw e404;
+          }
+          if(res.status === 403){
+            var e403 = new Error('permission-denied'); e403.code = 'permission-denied'; throw e403;
+          }
+          if(res.status === 429){
+            var e429 = new Error('resource-exhausted'); e429.code = 'resource-exhausted'; throw e429;
+          }
+          var eOther = new Error('http-'+res.status); eOther.code = 'error'; throw eOther;
+        }
+        return res.status === 204 ? null : res.json();
+      })
+      .catch(function(err){
+        clearTimeout(timer);
+        if(err && err.code) throw err;
+        if(err && err.name === 'AbortError'){ var eT = new Error('timeout'); eT.code = 'timeout'; throw eT; }
+        var eN = new Error('network'); eN.code = 'network'; throw eN;
+      });
+  }
+
+  function commitActiveInput(){
+    var el = document.activeElement;
+    if(el && el.tagName === 'INPUT' && (el.classList.contains('time-input') || el.classList.contains('ore-input'))){
+      el.blur();
+    }
+  }
+
+  // ---- salvataggio: un unico documento Firestore contiene tutto lo storico in JSON ----
+  var saveState = 'idle'; // idle | pending | ok | error
+  var loaded = false;
+  var seeded = false;
+
+  var badgeEl = null, badgeTextEl = null;
+  var hideBadgeTimer = null;
+
+  function updateSaveStatus(){
+    if(!statusEl) return;
+    var msg = '';
+    if(saveState === 'pending') msg = 'Salvataggio…';
+    else if(saveState === 'error') msg = 'Non riesco a salvare: controlla la connessione.';
+    statusEl.textContent = msg;
+
+    if(syncDotEl){
+      syncDotEl.className = 'sync-dot' + (saveState === 'ok' ? ' ok' : (saveState === 'error' ? ' off' : ''));
+    }
+
+    if(!badgeEl) return;
+    clearTimeout(hideBadgeTimer);
+    badgeEl.className = 'save-badge show ' + saveState;
+    if(saveState === 'pending'){
+      badgeTextEl.textContent = 'Salvataggio in corso, attendi prima di uscire…';
+    } else if(saveState === 'ok'){
+      badgeTextEl.textContent = 'Salvato ✓ — ora puoi uscire';
+      hideBadgeTimer = setTimeout(function(){ badgeEl.classList.remove('show'); }, 2200);
+    } else if(saveState === 'error'){
+      badgeTextEl.textContent = 'Salvataggio non riuscito, riprova';
+    } else {
+      badgeEl.classList.remove('show');
+    }
+  }
+
+  var pubTimer = null;
+  var pendingSave = false;
+  function schedule(){
+    pendingSave = true;
+    saveState = 'pending';
+    updateSaveStatus();
+    clearTimeout(pubTimer);
+    pubTimer = setTimeout(flushPublish, 1400);
+  }
+  function flushPublish(){
+    clearTimeout(pubTimer);
+    pubTimer = null;
+    if(!pendingSave) return;
+    pendingSave = false;
+    var payload = { fields: { json: { stringValue: JSON.stringify(data) } } };
+    fsFetch(DOC_PATH + '?updateMask.fieldPaths=json', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }, 12000).then(function(){
+      saveState = 'ok';
+      updateSaveStatus();
+    }).catch(function(){
+      saveState = 'error';
+      pendingSave = true; // riproveremo al prossimo giro utile
+      updateSaveStatus();
+    });
+  }
+
+  function persist(){ schedule(); }
+  function flushPersistNow(){ commitActiveInput(); flushPublish(); }
+
+  function caricaRemoto(){
+    fsFetch(DOC_PATH, {}, 12000).then(function(doc){
+      loaded = true;
+      var raw = doc && doc.fields && doc.fields.json && doc.fields.json.stringValue;
+      if(raw){
+        try{
+          var parsed = JSON.parse(raw);
+          if(parsed && typeof parsed === 'object'){
+            data = parsed;
+            renderCalendar();
+          }
+        }catch(e){ /* ignore */ }
+      }
+      if(saveState !== 'pending' && saveState !== 'error') { saveState = 'ok'; updateSaveStatus(); }
+    }).catch(function(err){
+      loaded = true;
+      if(err && err.code === 'not-found'){
+        // primo avvio: non esiste ancora nessun dato remoto sul database condiviso.
+        // Se abbiamo dati iniziali incorporati nella pagina (dal vecchio artefatto)
+        // e non ci sono ancora dati locali, li usiamo come semina una tantum.
+        if(!seeded && Object.keys(data).length === 0){
+          var iniz = document.getElementById('dati-iniziali');
+          if(iniz && iniz.textContent){
+            try{
+              var parsedIniz = JSON.parse(iniz.textContent);
+              if(parsedIniz && typeof parsedIniz === 'object' && Object.keys(parsedIniz).length){
+                data = parsedIniz;
+                renderCalendar();
+                seeded = true;
+                persist();
+              }
+            }catch(e){ /* ignore */ }
+          }
+        }
+        if(saveState === 'idle'){ saveState = 'ok'; updateSaveStatus(); }
+        return;
+      }
+      if(saveState === 'idle'){ saveState = 'error'; updateSaveStatus(); }
+    });
+  }
+
+  var pollTimer = null;
+  function initStorage(){
+    renderCalendar();
+    caricaRemoto();
+    pollTimer = setInterval(function(){
+      // non ricarichiamo da remoto se ci sono modifiche locali non ancora salvate,
+      // per non perdere quello che si sta scrivendo
+      if(pendingSave || saveState === 'pending') return;
+      if(document.activeElement && document.activeElement.tagName === 'INPUT') return;
+      caricaRemoto();
+    }, 6000);
+  }
+
+  function classicDownload(filename, blob){
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+  function saveFile(filename, blob){
+    classicDownload(filename, blob);
+    return Promise.resolve();
+  }
+
+  var today = new Date();
+  var current = { y: today.getFullYear(), m: today.getMonth() };
+
+  var monthNames = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+  var dowShort = ['dom','lun','mar','mer','gio','ven','sab'];
+
+  var listEl = document.getElementById('list');
+  var monthLabelEl = document.getElementById('monthLabel');
+  statusEl = document.getElementById('saveStatus');
+  badgeEl = document.getElementById('saveBadge');
+  badgeTextEl = document.getElementById('saveBadgeText');
+  syncDotEl = document.getElementById('syncDot');
+
+  function pad(n){ return n<10 ? '0'+n : ''+n; }
+  function dateStr(y,m,d){ return y+'-'+pad(m+1)+'-'+pad(d); }
+
+  function formatTimeInput(raw){
+    var digits = raw.replace(/[^0-9]/g,'').slice(0,4);
+    if(digits.length >= 3){
+      return digits.slice(0,2) + ':' + digits.slice(2);
+    }
+    return digits;
+  }
+
+  function finalizeTime(raw){
+    var digits = raw.replace(/[^0-9]/g,'').slice(0,4);
+    if(digits.length === 0) return '';
+    if(digits.length <= 2){
+      var hh0 = digits.length === 1 ? '0'+digits : digits;
+      return hh0 + ':00';
+    }
+    var hh = digits.slice(0,2);
+    var mm = digits.slice(2);
+    if(mm.length === 1) mm = '0'+mm;
+    return hh + ':' + mm;
+  }
+
+  function minutesFromTime(t){
+    if(!t) return null;
+    var m = /^([0-9]{1,2}):([0-9]{2})$/.exec(t.trim());
+    if(!m) return null;
+    var hh = parseInt(m[1],10), mm = parseInt(m[2],10);
+    if(isNaN(hh) || isNaN(mm) || hh>23 || mm>59) return null;
+    return hh*60 + mm;
+  }
+
+  function orarioMinutes(inizio, fine){
+    var a = minutesFromTime(inizio), b = minutesFromTime(fine);
+    if(a===null || b===null) return 0;
+    var diff = b - a;
+    if(diff < 0) diff += 24*60;
+    return diff;
+  }
+
+  function hasTotale(entry){
+    if(!entry) return false;
+    var v = parseFloat((entry.oreTotali||'').toString().replace(',','.'));
+    return !isNaN(v) && v>0;
+  }
+  function hasOrario(entry){
+    return !!(entry && minutesFromTime(entry.inizio)!==null && minutesFromTime(entry.fine)!==null);
+  }
+
+  function entryMinutes(entry){
+    if(!entry) return 0;
+    if(hasTotale(entry)){
+      var v = parseFloat(entry.oreTotali.toString().replace(',','.'));
+      return Math.round(v*60);
+    }
+    return orarioMinutes(entry.inizio, entry.fine);
+  }
+
+  function formatDec(mins){
+    return (mins/60).toFixed(1).replace('.', ',');
+  }
+
+  function ensureEntry(ds){
+    if(!data[ds]) data[ds] = { tipo:null, inizio:'', fine:'', oreTotali:'' };
+    return data[ds];
+  }
+
+  function cleanupEntry(ds){
+    var e = data[ds];
+    if(!e) return;
+    var hasAnyOrario = !!(e.inizio || e.fine);
+    if(!e.tipo && !hasTotale(e) && !hasAnyOrario){ delete data[ds]; }
+  }
+
+  function renderCalendar(){
+    var y = current.y, m = current.m;
+    monthLabelEl.textContent = monthNames[m] + ' ' + y;
+    listEl.innerHTML = '';
+
+    var daysInMonth = new Date(y, m+1, 0).getDate();
+
+    for(var d=1; d<=daysInMonth; d++){
+      listEl.appendChild(buildRow(y, m, d));
+    }
+    renderSummary();
+  }
+
+  function buildRow(y, m, d){
+    var ds = dateStr(y,m,d);
+    var dow = new Date(y,m,d).getDay();
+    var isToday = (y===today.getFullYear() && m===today.getMonth() && d===today.getDate());
+
+    var row = document.createElement('div');
+    row.className = 'row' + (isToday ? ' is-today' : '');
+    row.dataset.ds = ds;
+
+    var dateEl = document.createElement('div');
+    dateEl.className = 'date';
+    dateEl.innerHTML = '<span class="dow">'+dowShort[dow]+'</span><span class="num">'+pad(d)+'</span>';
+    row.appendChild(dateEl);
+
+    var mid = document.createElement('div');
+    mid.className = 'mid';
+
+    var editLine = document.createElement('div');
+    editLine.className = 'edit-line';
+
+    var editTop = document.createElement('div');
+    editTop.className = 'edit-top';
+
+    var ferieLabel = document.createElement('label');
+    ferieLabel.className = 'status-chk ferie-chk';
+    ferieLabel.innerHTML = '<input type="checkbox" class="ferieBox"> Ferie';
+    editTop.appendChild(ferieLabel);
+
+    var offLabel = document.createElement('label');
+    offLabel.className = 'status-chk off-chk';
+    offLabel.innerHTML = '<input type="checkbox" class="offBox"> Off';
+    editTop.appendChild(offLabel);
+
+    var mattinaLabel = document.createElement('label');
+    mattinaLabel.className = 'status-chk mattina-chk';
+    mattinaLabel.innerHTML = '<input type="checkbox" class="mattinaBox"> Mattina';
+    editTop.appendChild(mattinaLabel);
+
+    var clearBtn = document.createElement('button');
+    clearBtn.type = 'button';
+    clearBtn.className = 'clear-btn';
+    clearBtn.textContent = '✕';
+    editTop.appendChild(clearBtn);
+
+    editLine.appendChild(editTop);
+
+    var editBottom = document.createElement('div');
+    editBottom.className = 'edit-bottom';
+
+    var inputsWrap = document.createElement('div');
+    inputsWrap.className = 'inputs';
+
+    var t1 = document.createElement('input');
+    t1.type = 'text'; t1.className = 'time-input'; t1.inputMode = 'numeric';
+    t1.placeholder = '00:00'; t1.maxLength = 5; t1.autocomplete = 'off';
+    var sep = document.createElement('span');
+    sep.className = 'sep'; sep.textContent = '–';
+    var t2 = document.createElement('input');
+    t2.type = 'text'; t2.className = 'time-input'; t2.inputMode = 'numeric';
+    t2.placeholder = '00:00'; t2.maxLength = 5; t2.autocomplete = 'off';
+
+    var orSep = document.createElement('span');
+    orSep.className = 'or-sep'; orSep.textContent = 'o';
+
+    var num = document.createElement('input');
+    num.type = 'text'; num.className = 'ore-input'; num.inputMode = 'decimal';
+    num.placeholder = '0'; num.autocomplete = 'off';
+    var unit = document.createElement('span');
+    unit.className = 'unit'; unit.textContent = 'h';
+
+    var timeGroup = document.createElement('div');
+    timeGroup.className = 'time-group';
+    timeGroup.appendChild(t1); timeGroup.appendChild(sep); timeGroup.appendChild(t2);
+
+    var oreGroup = document.createElement('div');
+    oreGroup.className = 'ore-group';
+    oreGroup.appendChild(num); oreGroup.appendChild(unit);
+
+    inputsWrap.appendChild(timeGroup);
+    inputsWrap.appendChild(orSep);
+    inputsWrap.appendChild(oreGroup);
+    editBottom.appendChild(inputsWrap);
+    editLine.appendChild(editBottom);
+
+    mid.appendChild(editLine);
+
+    var staticLine = document.createElement('div');
+    staticLine.className = 'static-line';
+    mid.appendChild(staticLine);
+
+    row.appendChild(mid);
+
+    var resultEl = document.createElement('div');
+    resultEl.className = 'result';
+    row.appendChild(resultEl);
+
+    function currentEntry(){ return data[ds]; }
+
+    function refreshRow(){
+      var e = currentEntry();
+      var mins = entryMinutes(e);
+      var tipo = e ? e.tipo : null;
+      var totaleAttivo = hasTotale(e);
+      var orarioAttivo = hasOrario(e);
+      var isOff = (tipo === 'off');
+
+      row.classList.toggle('has-ferie', tipo==='ferie');
+      row.classList.toggle('has-off', tipo==='off');
+      row.classList.toggle('has-mattina', tipo==='mattina');
+      row.classList.toggle('has-lavorato', !tipo && mins>0);
+
+      ferieLabel.querySelector('input').checked = (tipo==='ferie');
+      offLabel.querySelector('input').checked = (tipo==='off');
+      mattinaLabel.querySelector('input').checked = (tipo==='mattina');
+
+      t1.value = (e && e.inizio) ? e.inizio : '';
+      t2.value = (e && e.fine) ? e.fine : '';
+      num.value = (e && e.oreTotali) ? e.oreTotali : '';
+
+      var oreDisattivate = isOff || orarioAttivo || (e && (e.inizio || e.fine));
+      var orarioDisattivato = isOff || totaleAttivo;
+      t1.disabled = orarioDisattivato;
+      t2.disabled = orarioDisattivato;
+      timeGroup.classList.toggle('is-disabled', orarioDisattivato);
+      num.disabled = !!oreDisattivate;
+      oreGroup.classList.toggle('is-disabled', !!oreDisattivate);
+
+      resultEl.textContent = isOff ? '0,0 h' : (mins>0 ? (formatDec(mins)+' h') : '—');
+
+      var orarioTesto = (e && (e.inizio||e.fine)) ? (e.inizio||'—')+'–'+(e.fine||'—') : '';
+      var dettaglio = isOff ? '' : (totaleAttivo ? formatDec(mins)+' h' : orarioTesto);
+      var tagLabel = tipo==='ferie' ? 'Ferie' : (tipo==='off' ? 'Off' : (tipo==='mattina' ? 'Mattina' : ''));
+
+      if(tipo && !dettaglio){
+        staticLine.innerHTML = '<span class="tag tag-'+tipo+'">'+tagLabel+'</span>';
+      } else if(tipo && dettaglio){
+        staticLine.innerHTML = '<span class="tag tag-'+tipo+'">'+tagLabel+'</span> <span class="muted">·</span> '+dettaglio;
+      } else if(dettaglio){
+        staticLine.textContent = dettaglio;
+      } else {
+        staticLine.innerHTML = '<span class="muted">—</span>';
+      }
+    }
+
+    function setTipo(nuovo){
+      var en = ensureEntry(ds);
+      en.tipo = nuovo;
+      if(nuovo === 'off'){
+        en.inizio = ''; en.fine = ''; en.oreTotali = '';
+      }
+      cleanupEntry(ds);
+      persist(); refreshRow(); updateSummary();
+    }
+
+    ferieLabel.querySelector('input').addEventListener('change', function(){
+      setTipo(this.checked ? 'ferie' : null);
+    });
+    offLabel.querySelector('input').addEventListener('change', function(){
+      setTipo(this.checked ? 'off' : null);
+    });
+    mattinaLabel.querySelector('input').addEventListener('change', function(){
+      setTipo(this.checked ? 'mattina' : null);
+    });
+
+    t1.addEventListener('input', function(){
+      t1.value = formatTimeInput(t1.value);
+      var en = ensureEntry(ds); en.inizio = t1.value;
+      persist();
+    });
+    t2.addEventListener('input', function(){
+      t2.value = formatTimeInput(t2.value);
+      var en = ensureEntry(ds); en.fine = t2.value;
+      persist();
+    });
+    function finalizeT1(){
+      var en = ensureEntry(ds); en.inizio = finalizeTime(t1.value);
+      cleanupEntry(ds); persist(); refreshRow(); updateSummary();
+    }
+    function finalizeT2(){
+      var en = ensureEntry(ds); en.fine = finalizeTime(t2.value);
+      cleanupEntry(ds); persist(); refreshRow(); updateSummary();
+    }
+    t1.addEventListener('change', finalizeT1);
+    t1.addEventListener('blur', finalizeT1);
+    t2.addEventListener('change', finalizeT2);
+    t2.addEventListener('blur', finalizeT2);
+    num.addEventListener('input', function(){
+      num.value = num.value.replace(/[^0-9.,]/g,'');
+      var en = ensureEntry(ds); en.oreTotali = num.value;
+      var attivo = num.value !== '';
+      t1.disabled = attivo; t2.disabled = attivo;
+      timeGroup.classList.toggle('is-disabled', attivo);
+      resultEl.textContent = (entryMinutes(en)>0) ? (formatDec(entryMinutes(en))+' h') : '—';
+      persist(); updateSummary();
+    });
+    num.addEventListener('change', function(){
+      cleanupEntry(ds); persist(); refreshRow(); updateSummary();
+    });
+
+    clearBtn.addEventListener('click', function(){
+      delete data[ds];
+      persist(); refreshRow(); updateSummary();
+    });
+
+    refreshRow();
+    return row;
+  }
+
+  function monthTotals(y, m){
+    var lavMins = 0, ferieMins = 0, giorniFerie = 0, giorniOff = 0, giorniMattina = 0;
+    Object.keys(data).forEach(function(ds){
+      var parts = ds.split('-');
+      if(parseInt(parts[0],10)===y && parseInt(parts[1],10)===m+1){
+        var e = data[ds];
+        var mins = entryMinutes(e);
+        if(e.tipo === 'ferie'){
+          giorniFerie++;
+          ferieMins += mins;
+        } else if(e.tipo === 'off'){
+          giorniOff++;
+        } else if(e.tipo === 'mattina'){
+          giorniMattina++;
+          lavMins += mins;
+        } else {
+          lavMins += mins;
+        }
+      }
+    });
+    return { lavMins:lavMins, ferieMins:ferieMins, giorniFerie:giorniFerie, giorniOff:giorniOff, giorniMattina:giorniMattina };
+  }
+
+  function updateSummary(){
+    var t = monthTotals(current.y, current.m);
+    document.getElementById('statTotale').textContent = formatDec(t.lavMins+t.ferieMins)+' h';
+    document.getElementById('statLavorate').textContent = formatDec(t.lavMins)+' h';
+    document.getElementById('statFerie').textContent = formatDec(t.ferieMins)+' h';
+    document.getElementById('statGiorniFerie').textContent = t.giorniFerie;
+    document.getElementById('statGiorniOff').textContent = t.giorniOff;
+    document.getElementById('statGiorniMattina').textContent = t.giorniMattina;
+  }
+  function renderSummary(){ updateSummary(); }
+
+  document.getElementById('prevMonth').addEventListener('click', function(){
+    current.m--; if(current.m<0){ current.m=11; current.y--; }
+    renderCalendar();
+  });
+  document.getElementById('nextMonth').addEventListener('click', function(){
+    current.m++; if(current.m>11){ current.m=0; current.y++; }
+    renderCalendar();
+  });
+
+  var monthViewEl = document.getElementById('monthView');
+  var yearViewEl = document.getElementById('yearView');
+  var yearLabelEl = document.getElementById('yearLabel');
+  var yearTotalEl = document.getElementById('yearTotal');
+  var yearTableEl = document.getElementById('yearTable');
+  var currentYear = today.getFullYear();
+
+  function setActiveBtn(id){
+    ['btnEdit','btnSummary','btnYear'].forEach(function(bid){
+      document.getElementById(bid).classList.toggle('active', bid===id);
+    });
+  }
+
+  document.getElementById('btnEdit').addEventListener('click', function(){
+    document.body.classList.remove('summary-mode');
+    monthViewEl.style.display = '';
+    yearViewEl.style.display = 'none';
+    setActiveBtn('btnEdit');
+  });
+  document.getElementById('btnSummary').addEventListener('click', function(){
+    document.body.classList.add('summary-mode');
+    monthViewEl.style.display = '';
+    yearViewEl.style.display = 'none';
+    setActiveBtn('btnSummary');
+  });
+  document.getElementById('btnYear').addEventListener('click', function(){
+    monthViewEl.style.display = 'none';
+    yearViewEl.style.display = '';
+    setActiveBtn('btnYear');
+    renderYear();
+  });
+
+  document.getElementById('prevYear').addEventListener('click', function(){
+    currentYear--; renderYear();
+  });
+  document.getElementById('nextYear').addEventListener('click', function(){
+    currentYear++; renderYear();
+  });
+
+  function renderYear(){
+    yearLabelEl.textContent = currentYear;
+    var totLav = 0, totFerie = 0;
+    var rows = '';
+    for(var m=0; m<12; m++){
+      var t = monthTotals(currentYear, m);
+      totLav += t.lavMins; totFerie += t.ferieMins;
+      var tot = t.lavMins + t.ferieMins;
+      var isCurrent = (currentYear===today.getFullYear() && m===today.getMonth());
+      var detailBits = [];
+      if(t.giorniFerie>0) detailBits.push(t.giorniFerie+' gg ferie');
+      if(t.giorniOff>0) detailBits.push(t.giorniOff+' off');
+      if(t.giorniMattina>0) detailBits.push(t.giorniMattina+' mattina');
+      rows += '<div class="year-row'+(isCurrent?' is-current-month':'')+(tot<=0?' is-empty':'')+'">' +
+        '<div><div class="ym-name">'+monthNames[m]+'</div>' +
+        (detailBits.length ? '<div class="ym-detail">'+detailBits.join(' · ')+'</div>' : '') +
+        '</div>' +
+        '<div class="ym-total">'+(tot>0?formatDec(tot)+' h':'—')+'</div>' +
+      '</div>';
+    }
+    yearTableEl.innerHTML = rows;
+    yearTotalEl.innerHTML = '<div class="num">'+formatDec(totLav+totFerie)+' h</div><div class="lbl">ore totali dell\'anno (lavorate: '+formatDec(totLav)+' h · ferie: '+formatDec(totFerie)+' h)</div>';
+  }
+
+  document.getElementById('exportPdf').addEventListener('click', function(){
+    try{
+      if(!window.jspdf || !window.jspdf.jsPDF){
+        alert('Generazione PDF non disponibile (serve una connessione internet la prima volta).');
+        return;
+      }
+      var y = current.y, m = current.m;
+      var doc = new window.jspdf.jsPDF({ unit:'pt', format:'a4' });
+      var pageW = doc.internal.pageSize.getWidth();
+      var pageH = doc.internal.pageSize.getHeight();
+      var marginL = 40, marginR = 40;
+      var yPos = 50;
+
+      doc.setFont('helvetica','bold'); doc.setFontSize(16);
+      doc.text('Registro Ore', marginL, yPos);
+      doc.setFont('helvetica','normal'); doc.setFontSize(12);
+      doc.text(monthNames[m]+' '+y, marginL, yPos+18);
+      yPos += 40;
+
+      var lavMins=0, ferieMins=0, giorniFerie=0, giorniOff=0, giorniMattina=0;
+      var daysInMonth = new Date(y, m+1, 0).getDate();
+      for(var d=1; d<=daysInMonth; d++){
+        var e = data[dateStr(y,m,d)];
+        if(!e) continue;
+        var mins = entryMinutes(e);
+        if(e.tipo==='ferie'){ giorniFerie++; ferieMins+=mins; }
+        else if(e.tipo==='off'){ giorniOff++; }
+        else if(e.tipo==='mattina'){ giorniMattina++; lavMins+=mins; }
+        else { lavMins+=mins; }
+      }
+      doc.setFontSize(11);
+      doc.text('Totale ore: '+formatDec(lavMins+ferieMins)+' h    lavorate: '+formatDec(lavMins)+' h    ferie: '+formatDec(ferieMins)+' h ('+giorniFerie+' gg)    mattina: '+giorniMattina+' gg    off: '+giorniOff+' gg', marginL, yPos);
+      yPos += 26;
+
+      doc.setFont('helvetica','bold'); doc.setFontSize(10);
+      doc.text('Giorno', marginL, yPos);
+      doc.text('Tipo', marginL+90, yPos);
+      doc.text('Orario', marginL+180, yPos);
+      doc.text('Ore', pageW-marginR-30, yPos);
+      yPos += 6;
+      doc.setDrawColor(180); doc.line(marginL, yPos, pageW-marginR, yPos);
+      yPos += 14;
+      doc.setFont('helvetica','normal');
+
+      for(var d2=1; d2<=daysInMonth; d2++){
+        if(yPos > pageH - 50){
+          doc.addPage(); yPos = 50;
+        }
+        var ds2 = dateStr(y,m,d2);
+        var ent = data[ds2];
+        var dow2 = new Date(y,m,d2).getDay();
+        var mins2 = entryMinutes(ent);
+        var tipoLabel = !ent ? '' : (ent.tipo==='ferie'?'Ferie':(ent.tipo==='off'?'Off':(ent.tipo==='mattina'?'Mattina':(mins2>0?'Lavorato':''))));
+        var orarioLabel = (ent && !hasTotale(ent) && hasOrario(ent)) ? (ent.inizio+'–'+ent.fine) : '';
+        var oreLabel = mins2>0 ? formatDec(mins2)+' h' : '—';
+
+        doc.text(dowShort[dow2]+' '+pad(d2), marginL, yPos);
+        doc.text(tipoLabel||'—', marginL+90, yPos);
+        doc.text(orarioLabel||'—', marginL+180, yPos);
+        doc.text(oreLabel, pageW-marginR-30, yPos);
+        yPos += 16;
+      }
+
+      var pdfBlob = doc.output('blob');
+      saveFile('ore_'+monthNames[m]+'_'+y+'.pdf', pdfBlob);
+    }catch(err){
+      console.error('Errore esportazione PDF', err);
+      alert('Non sono riuscito a generare il PDF.');
+    }
+  });
+
+  document.getElementById('exportCsv').addEventListener('click', function(){
+    var y = current.y, m = current.m;
+    var rows = [['Data','Tipo','Orario','Ore']];
+    var daysInMonth = new Date(y, m+1, 0).getDate();
+    for(var d=1; d<=daysInMonth; d++){
+      var ds = dateStr(y,m,d);
+      var e = data[ds];
+      if(!e) continue;
+      var mins = entryMinutes(e);
+      var orarioStr = (!hasTotale(e) && hasOrario(e)) ? ((e.inizio||'')+'-'+(e.fine||'')) : '';
+      var tipoStr = e.tipo==='ferie' ? 'Ferie' : (e.tipo==='off' ? 'Off' : (e.tipo==='mattina' ? 'Mattina' : 'Lavorato'));
+      rows.push([ds, tipoStr, orarioStr, mins>0 ? formatDec(mins) : '']);
+    }
+    var csv = rows.map(function(r){
+      return r.map(function(cell){
+        cell = (cell===undefined||cell===null) ? '' : String(cell);
+        if(cell.indexOf(',')>-1 || cell.indexOf('"')>-1){ cell = '"'+cell.replace(/"/g,'""')+'"'; }
+        return cell;
+      }).join(',');
+    }).join('\n');
+    var blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+    saveFile('ore_'+monthNames[m]+'_'+y+'.csv', blob);
+  });
+
+  document.getElementById('exportBackup').addEventListener('click', function(){
+    var blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json;charset=utf-8;'});
+    saveFile('registro-ore-backup.json', blob);
+  });
+
+  document.getElementById('importBackup').addEventListener('click', function(){
+    document.getElementById('importFile').click();
+  });
+  document.getElementById('importFile').addEventListener('change', function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(evt){
+      try{
+        var parsed = JSON.parse(evt.target.result);
+        if(typeof parsed !== 'object' || parsed === null) throw new Error('formato non valido');
+        var sostituisci = confirm('Vuoi SOSTITUIRE tutti i dati attuali con quelli del backup? Annulla per unire i dati invece di sostituirli.');
+        if(sostituisci){
+          data = parsed;
+        } else {
+          Object.keys(parsed).forEach(function(ds){ data[ds] = parsed[ds]; });
+        }
+        persist();
+        renderCalendar();
+        alert('Backup caricato correttamente.');
+      }catch(err){
+        alert('Il file scelto non è un backup valido di Registro Ore.');
+      }
+      e.target.value = '';
+    };
+    reader.readAsText(file);
+  });
+
+  initStorage();
+
+  document.addEventListener('visibilitychange', function(){
+    if(document.hidden){
+      commitActiveInput();
+      flushPersistNow();
+    }
+  });
+  window.addEventListener('pagehide', function(){
+    commitActiveInput();
+    flushPersistNow();
+  });
+  window.addEventListener('blur', function(){
+    flushPersistNow();
+  });
+})();
+</script></body></html>
