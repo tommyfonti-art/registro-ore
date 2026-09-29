@@ -36,6 +36,51 @@
   header.top{
     display:flex; align-items:center; justify-content:space-between;
     margin-bottom:12px;
+    gap:8px;
+  }
+  .top-right{ display:flex; align-items:center; gap:8px; }
+  .gear-btn{
+    background:none; border:1px solid var(--rule-strong); color:var(--ink);
+    width:30px; height:30px; border-radius:7px; font-size:14px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .overlay{
+    display:none; position:fixed; inset:0; z-index:50;
+    background:rgba(33,31,26,0.55);
+    align-items:center; justify-content:center;
+    padding:20px;
+  }
+  .overlay-card{
+    background:var(--paper); border:1px solid var(--rule-strong); border-radius:14px;
+    padding:20px; max-width:360px; width:100%; max-height:88vh; overflow:auto;
+    box-shadow:0 10px 30px rgba(0,0,0,0.25);
+  }
+  .overlay-card h2{ font-family:'Fraunces', serif; font-weight:500; font-size:19px; margin:0 0 10px; }
+  .overlay-card p{ margin:0 0 14px; font-size:12.5px; color:var(--ink-soft); line-height:1.5; }
+  .overlay-card label{ display:block; font-size:11.5px; color:var(--ink-soft); margin-bottom:14px; }
+  .overlay-card label input{
+    display:block; width:100%; margin-top:6px; font-family:'IBM Plex Mono', monospace; font-size:15px;
+    border:1px solid var(--rule-strong); background:#fff; color:var(--ink); padding:8px 10px; border-radius:6px;
+  }
+  .btn-ob{
+    display:block; width:100%; text-align:center; padding:11px 12px; margin-bottom:10px;
+    border:1px solid var(--rule-strong); border-radius:8px; background:#fff; color:var(--ink);
+    font-family:'IBM Plex Mono', monospace; font-size:13px; font-weight:600; cursor:pointer;
+  }
+  .btn-ob.primary{ background:var(--teal); border-color:var(--teal); color:#F2FBF6; }
+  .ob-sep{ text-align:center; font-size:11px; color:var(--ink-soft); margin:2px 0 12px; }
+  .code-row{ display:flex; gap:8px; align-items:center; margin-bottom:14px; }
+  .code-row code{
+    flex:1; font-family:'IBM Plex Mono', monospace; font-size:15px; font-weight:600;
+    background:#fff; border:1px solid var(--rule-strong); border-radius:6px; padding:8px 10px;
+  }
+  .code-row input{
+    flex:1; font-family:'IBM Plex Mono', monospace; font-size:14px;
+    border:1px solid var(--rule-strong); background:#fff; color:var(--ink); padding:8px 10px; border-radius:6px;
+  }
+  .code-row button{
+    border:1px solid var(--rule-strong); background:#fff; color:var(--ink); border-radius:6px;
+    padding:8px 12px; font-family:'IBM Plex Mono', monospace; font-size:12px; cursor:pointer; flex-shrink:0;
   }
   .sync-dot{
     display:inline-block; width:7px; height:7px; border-radius:50%;
@@ -226,11 +271,14 @@
 </style></head><body><div id="page">
 <div class="wrap">
   <header class="top">
-    <h1>Registro Ore<span class="sync-dot" id="syncDot"></span></h1>
-    <div class="mode-switch">
-      <button id="btnEdit" class="active">Modifica</button>
-      <button id="btnSummary">Riepilogo</button>
-      <button id="btnYear">Anno</button>
+    <h1><span id="titleText">Registro Ore</span><span class="sync-dot" id="syncDot"></span></h1>
+    <div class="top-right">
+      <button id="btnSettings" class="gear-btn" type="button" aria-label="Impostazioni">⚙️</button>
+      <div class="mode-switch">
+        <button id="btnEdit" class="active">Modifica</button>
+        <button id="btnSummary">Riepilogo</button>
+        <button id="btnYear">Anno</button>
+      </div>
     </div>
   </header>
 
@@ -286,6 +334,29 @@
 </div>
 
 <div class="save-badge" id="saveBadge"><span class="dot"></span><span id="saveBadgeText">Salvataggio…</span></div>
+
+<div class="overlay" id="onboard">
+  <div class="overlay-card">
+    <h2>Benvenuto in Registro Ore</h2>
+    <p>Questo link può essere usato da più persone: ognuno ha il proprio calendario delle ore, separato da quello degli altri.</p>
+    <button id="obTommi" class="btn-ob primary" type="button">Sono Tommi, apri il mio registro</button>
+    <div class="ob-sep">oppure</div>
+    <label>Il tuo nome (facoltativo)<input id="obNome" type="text" placeholder="Es. Marco" autocomplete="off"></label>
+    <button id="obNuovo" class="btn-ob" type="button">Crea la mia area personale, vuota</button>
+  </div>
+</div>
+
+<div class="overlay" id="settingsPanel">
+  <div class="overlay-card">
+    <h2>Impostazioni</h2>
+    <label>Il tuo nome<input id="setNome" type="text" placeholder="Es. Marco" autocomplete="off"></label>
+    <p>Codice di quest'area: ti serve solo se un giorno devi ritrovarla su un altro telefono.</p>
+    <div class="code-row"><code id="setCodice">—</code><button id="setCopia" type="button">Copia</button></div>
+    <p>Hai un codice che ti ha dato qualcun altro? Scrivilo qui per entrare nella sua area.</p>
+    <div class="code-row"><input id="setJoinCode" type="text" placeholder="codice" autocomplete="off"><button id="setJoin" type="button">Entra</button></div>
+    <button id="setClose" class="btn-ob primary" type="button">Chiudi</button>
+  </div>
+</div>
 </div><script id="dati-iniziali" type="application/json">{"2026-09-01":{"tipo":"ferie","inizio":"","fine":"","oreTotali":"6"},"2026-09-02":{"tipo":"ferie","inizio":"","fine":"","oreTotali":"6"},"2026-09-03":{"tipo":null,"inizio":"","fine":"","oreTotali":"6,5"},"2026-09-04":{"tipo":null,"inizio":"","fine":"","oreTotali":"7"},"2026-09-05":{"tipo":null,"inizio":"","fine":"","oreTotali":"7,5"},"2026-09-06":{"tipo":null,"inizio":"","fine":"","oreTotali":"5,5"},"2026-09-07":{"tipo":null,"inizio":"","fine":"","oreTotali":"5,5"},"2026-09-08":{"tipo":null,"inizio":"","fine":"","oreTotali":"9"},"2026-09-09":{"tipo":null,"inizio":"","fine":"","oreTotali":"7"},"2026-09-10":{"tipo":null,"inizio":"","fine":"","oreTotali":"7,5"},"2026-09-11":{"tipo":null,"inizio":"","fine":"","oreTotali":"7"},"2026-09-12":{"tipo":null,"inizio":"","fine":"","oreTotali":"7"},"2026-09-13":{"tipo":"ferie","inizio":"","fine":"","oreTotali":"5,5"},"2026-09-14":{"tipo":"ferie","inizio":"","fine":"","oreTotali":"6"},"2026-09-15":{"tipo":"off","inizio":"","fine":"","oreTotali":""},"2026-09-16":{"tipo":"ferie","inizio":"","fine":"","oreTotali":"6"},"2026-09-17":{"tipo":"ferie","inizio":"","fine":"","oreTotali":"6"},"2026-09-18":{"tipo":"ferie","inizio":"","fine":"","oreTotali":"7"},"2026-09-20":{"tipo":"ferie","inizio":"","fine":"","oreTotali":"5,5"},"2026-09-19":{"tipo":"ferie","inizio":"","fine":"","oreTotali":"7"},"2026-09-21":{"tipo":"off","inizio":"","fine":"","oreTotali":""},"2026-09-22":{"tipo":null,"inizio":"18:30","fine":"00:30","oreTotali":""},"2026-09-23":{"tipo":"mattina","inizio":"08:00","fine":"18:00","oreTotali":""},"2026-09-24":{"tipo":null,"inizio":"18:30","fine":"00:30","oreTotali":""},"2026-09-25":{"tipo":null,"inizio":"18:00","fine":"01:00","oreTotali":""},"2026-09-26":{"tipo":null,"inizio":"18:00","fine":"01:30","oreTotali":""},"2026-09-27":{"tipo":null,"inizio":"18:00","fine":"00:00","oreTotali":""},"2026-09-30":{"tipo":"mattina","inizio":"","fine":"","oreTotali":""},"2026-09-28":{"tipo":"off","inizio":"","fine":"","oreTotali":""},"2026-09-29":{"tipo":null,"inizio":"18:30","fine":"00:30","oreTotali":""},"2026-10-04":{"tipo":"ferie","inizio":"18:00","fine":"00:00","oreTotali":""},"2026-10-18":{"tipo":"ferie","inizio":"18:00","fine":"00","oreTotali":""},"2026-10-05":{"tipo":"off","inizio":"","fine":"","oreTotali":""},"2026-10-19":{"tipo":"off","inizio":"","fine":"","oreTotali":""}}</script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><script id="main">
 (function(){
   var firebaseConfig = {
@@ -300,6 +371,32 @@
   var API_KEY = firebaseConfig.apiKey;
   var API_BASE = 'https://firestore.googleapis.com/v1/projects/' + PROJECT_ID + '/databases/(default)/documents';
   var DOC_PATH = '/ore/dati';
+  var CODICE_TOMMI = 'tommi-principale';
+  var codiceArea = null;
+
+  function generaCodice(){
+    var chars = 'abcdefghjkmnpqrstuvwxyz23456789';
+    var s = '';
+    for (var i = 0; i < 6; i++) s += chars.charAt(Math.floor(Math.random() * chars.length));
+    return s;
+  }
+  function setAreaPath(codice){
+    codiceArea = codice;
+    DOC_PATH = (codice === CODICE_TOMMI) ? '/ore/dati' : ('/liste/' + encodeURIComponent(codice) + '/ore/dati');
+  }
+  function nomeSalvato(){
+    try{ return localStorage.getItem('ore_nome') || ''; }catch(e){ return ''; }
+  }
+  function salvaNome(n){
+    try{ localStorage.setItem('ore_nome', n || ''); }catch(e){}
+    aggiornaTitolo();
+  }
+  function aggiornaTitolo(){
+    var t = document.getElementById('titleText');
+    if (!t) return;
+    var nome = nomeSalvato();
+    t.textContent = 'Registro Ore' + (nome ? ' — ' + nome : '');
+  }
 
   var data = {};
   var statusEl = null;
@@ -430,7 +527,7 @@
         // primo avvio: non esiste ancora nessun dato remoto sul database condiviso.
         // Se abbiamo dati iniziali incorporati nella pagina (dal vecchio artefatto)
         // e non ci sono ancora dati locali, li usiamo come semina una tantum.
-        if(!seeded && Object.keys(data).length === 0){
+        if(codiceArea === CODICE_TOMMI && !seeded && Object.keys(data).length === 0){
           var iniz = document.getElementById('dati-iniziali');
           if(iniz && iniz.textContent){
             try{
@@ -1019,7 +1116,70 @@
     reader.readAsText(file);
   });
 
-  initStorage();
+  /* ---------- più persone, stesso link: ognuno con la sua area ---------- */
+  var onboardEl = document.getElementById('onboard');
+  var settingsEl = document.getElementById('settingsPanel');
+
+  document.getElementById('obTommi').addEventListener('click', function(){
+    try{ localStorage.setItem('ore_area_codice', CODICE_TOMMI); }catch(e){}
+    setAreaPath(CODICE_TOMMI);
+    onboardEl.style.display = 'none';
+    aggiornaTitolo();
+    initStorage();
+  });
+  document.getElementById('obNuovo').addEventListener('click', function(){
+    var nome = document.getElementById('obNome').value.trim();
+    if (nome) salvaNome(nome);
+    var nuovoCodice = generaCodice();
+    try{ localStorage.setItem('ore_area_codice', nuovoCodice); }catch(e){}
+    setAreaPath(nuovoCodice);
+    onboardEl.style.display = 'none';
+    aggiornaTitolo();
+    initStorage();
+  });
+
+  document.getElementById('btnSettings').addEventListener('click', function(){
+    document.getElementById('setNome').value = nomeSalvato();
+    document.getElementById('setCodice').textContent = codiceArea || '—';
+    document.getElementById('setJoinCode').value = '';
+    settingsEl.style.display = 'flex';
+  });
+  document.getElementById('setClose').addEventListener('click', function(){
+    salvaNome(document.getElementById('setNome').value.trim());
+    settingsEl.style.display = 'none';
+  });
+  document.getElementById('setCopia').addEventListener('click', function(){
+    var c = codiceArea || '';
+    if (!c) return;
+    var btn = document.getElementById('setCopia');
+    var fatto = function(){ var t0 = btn.textContent; btn.textContent = 'Copiato!'; setTimeout(function(){ btn.textContent = t0; }, 1500); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(c).then(fatto, fatto);
+    else fatto();
+  });
+  document.getElementById('setJoin').addEventListener('click', function(){
+    var v = document.getElementById('setJoinCode').value.trim().toLowerCase();
+    if (!v) return;
+    if (!confirm('Passare all’area con codice "' + v + '"? Per tornare a questa che vedi ora ti basterà reinserire il codice "' + (codiceArea || '') + '" da qui.')) return;
+    try{ localStorage.setItem('ore_area_codice', v); }catch(e){}
+    setAreaPath(v);
+    settingsEl.style.display = 'none';
+    clearInterval(pollTimer);
+    seeded = false; loaded = false; saveState = 'idle'; pendingSave = false;
+    data = {};
+    current = { y: today.getFullYear(), m: today.getMonth() };
+    renderCalendar();
+    initStorage();
+  });
+
+  var codiceSalvato = null;
+  try{ codiceSalvato = localStorage.getItem('ore_area_codice'); }catch(e){}
+  if (codiceSalvato){
+    setAreaPath(codiceSalvato);
+    aggiornaTitolo();
+    initStorage();
+  } else {
+    onboardEl.style.display = 'flex';
+  }
 
   document.addEventListener('visibilitychange', function(){
     if(document.hidden){
