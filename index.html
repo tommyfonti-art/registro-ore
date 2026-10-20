@@ -1249,6 +1249,27 @@
       }
     }
   });
+  /* aggiornamento automatico: se su GitHub c'è una versione nuova dell'app, la ricarico da sola */
+  function controllaVersione(){
+    try{
+      if(!window.fetch || location.protocol.indexOf('http')!==0) return;
+      var ae = document.activeElement;
+      if(ae && (ae.tagName==='INPUT' || ae.tagName==='TEXTAREA')) return;
+      fetch(location.pathname + '?v=' + Date.now(), { cache:'no-store' }).then(function(r){ return r.ok ? r.text() : ''; }).then(function(t){
+        if(!t || t.indexOf('Registro Ore')<0) return;
+        var h = 0; for(var i=0;i<t.length;i++){ h = ((h<<5)-h + t.charCodeAt(i))|0; }
+        var old = null; try{ old = localStorage.getItem('ore_ver'); }catch(e){}
+        try{ localStorage.setItem('ore_ver', String(h)); }catch(e){}
+        if(old !== null && old !== String(h)){
+          commitActiveInput(); flushPersistNow();
+          setTimeout(function(){ location.reload(); }, 400);
+        }
+      }).catch(function(){});
+    }catch(e){}
+  }
+  setTimeout(controllaVersione, 1500);
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden) setTimeout(controllaVersione, 800); });
+
   /* all'apertura porto in vista oggi, anche se i dati arrivano in ritardo (finché non tocchi lo schermo) */
   var userTouched = false;
   ['touchstart','mousedown','keydown','wheel'].forEach(function(ev){ window.addEventListener(ev, function(){ userTouched = true; }, { passive:true, once:true }); });
