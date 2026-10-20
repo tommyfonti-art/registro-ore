@@ -147,7 +147,17 @@
     border-left:3px solid transparent;
     gap:6px;
   }
-  .row.is-today{ background:rgba(128,128,128,0.08); }
+  .row.is-today{ box-shadow:inset 0 0 0 3px var(--ink); border-left-color:var(--ink); scroll-margin-top:90px; }
+  .row.is-today:not(.has-ferie):not(.has-off):not(.has-mattina){ background:#FBE8A6; }
+  .row.is-today .date .num{ font-size:20px; font-weight:700; }
+  .today-tag{ display:inline-block; margin-top:2px; padding:1px 6px; border-radius:9px; background:var(--ink); color:var(--paper); font-size:10px; font-weight:700; letter-spacing:.6px; }
+  .today-btn{
+    position:fixed; right:14px; bottom:calc(64px + env(safe-area-inset-bottom, 0px)); z-index:15;
+    display:none; align-items:center; gap:6px; border:none; cursor:pointer;
+    background:var(--ink); color:var(--paper); border-radius:24px; padding:12px 18px;
+    font-family:'IBM Plex Mono', monospace; font-size:14px; font-weight:700;
+    box-shadow:0 4px 14px rgba(0,0,0,0.3);
+  }
   .row.has-lavorato{ border-left-color:var(--teal); }
   .row.has-ferie{ border-left-color:var(--terracotta); background:var(--terracotta-tint); }
   .row.has-off{ border-left-color:var(--off); background:var(--off-tint); }
@@ -312,6 +322,7 @@
 
   <div class="list" id="list"></div>
   </div>
+  <button id="todayBtn" class="today-btn" type="button" aria-label="Vai a oggi">&#9679; Vai a oggi</button>
 
   <div id="yearView" style="display:none">
     <div class="month-nav">
@@ -672,7 +683,35 @@
       listEl.appendChild(buildRow(y, m, d));
     }
     renderSummary();
+    if(!autoScrolled && current.y===today.getFullYear() && current.m===today.getMonth() && monthViewEl && monthViewEl.style.display!=='none'){
+      autoScrolled = true;
+      setTimeout(function(){ scrollToToday(false); }, 60);
+    }
+    updateTodayBtn();
   }
+
+  var autoScrolled = false;
+  function todayRow(){ return listEl.querySelector('.row.is-today'); }
+  function scrollToToday(smooth){
+    var r = todayRow();
+    if(!r) return;
+    try{ r.scrollIntoView({ block:'center', behavior: smooth ? 'smooth' : 'auto' }); }catch(e){ r.scrollIntoView(); }
+    setTimeout(updateTodayBtn, smooth ? 500 : 80);
+  }
+  function updateTodayBtn(){
+    var b = document.getElementById('todayBtn');
+    if(!b) return;
+    var visibleView = monthViewEl && monthViewEl.style.display!=='none';
+    var r = todayRow();
+    var inView = false;
+    if(r){
+      var q = r.getBoundingClientRect();
+      inView = q.top >= 60 && q.bottom <= (window.innerHeight - 60);
+    }
+    b.style.display = (visibleView && !inView) ? 'flex' : 'none';
+  }
+  window.addEventListener('scroll', updateTodayBtn, { passive:true });
+  window.addEventListener('resize', updateTodayBtn);
 
   function buildRow(y, m, d){
     var ds = dateStr(y,m,d);
@@ -685,7 +724,7 @@
 
     var dateEl = document.createElement('div');
     dateEl.className = 'date';
-    dateEl.innerHTML = '<span class="dow">'+dowShort[dow]+'</span><span class="num">'+pad(d)+'</span>';
+    dateEl.innerHTML = '<span class="dow">'+dowShort[dow]+'</span><span class="num">'+pad(d)+'</span>'+(isToday?'<span class="today-tag">OGGI</span>':'');
     row.appendChild(dateEl);
 
     var mid = document.createElement('div');
@@ -942,16 +981,19 @@
     document.body.classList.remove('summary-mode');
     monthViewEl.style.display = '';
     yearViewEl.style.display = 'none';
+    updateTodayBtn();
     setActiveBtn('btnEdit');
   });
   document.getElementById('btnSummary').addEventListener('click', function(){
     document.body.classList.add('summary-mode');
     monthViewEl.style.display = '';
     yearViewEl.style.display = 'none';
+    updateTodayBtn();
     setActiveBtn('btnSummary');
   });
   document.getElementById('btnYear').addEventListener('click', function(){
     monthViewEl.style.display = 'none';
+    updateTodayBtn();
     yearViewEl.style.display = '';
     setActiveBtn('btnYear');
     renderYear();
@@ -1181,10 +1223,30 @@
     onboardEl.style.display = 'flex';
   }
 
+  document.getElementById('todayBtn').addEventListener('click', function(){
+    commitActiveInput();
+    if(current.y!==today.getFullYear() || current.m!==today.getMonth()){
+      current = { y: today.getFullYear(), m: today.getMonth() };
+      autoScrolled = true;
+      renderCalendar();
+    }
+    scrollToToday(true);
+  });
   document.addEventListener('visibilitychange', function(){
     if(document.hidden){
       commitActiveInput();
       flushPersistNow();
+    } else {
+      /* se l'app è rimasta aperta da ieri, aggiorno il giorno di oggi */
+      var n = new Date();
+      if(n.toDateString() !== today.toDateString()){
+        today = n;
+        current = { y: today.getFullYear(), m: today.getMonth() };
+        autoScrolled = false;
+        renderCalendar();
+      } else {
+        updateTodayBtn();
+      }
     }
   });
   window.addEventListener('pagehide', function(){
