@@ -1249,6 +1249,15 @@
       }
     }
   });
+  /* all'apertura porto in vista oggi, anche se i dati arrivano in ritardo (finché non tocchi lo schermo) */
+  var userTouched = false;
+  ['touchstart','mousedown','keydown','wheel'].forEach(function(ev){ window.addEventListener(ev, function(){ userTouched = true; }, { passive:true, once:true }); });
+  [400, 1200, 2500].forEach(function(ms){
+    setTimeout(function(){
+      if(!userTouched && current.y===today.getFullYear() && current.m===today.getMonth()) scrollToToday(false);
+      updateTodayBtn();
+    }, ms);
+  });
   window.addEventListener('pagehide', function(){
     commitActiveInput();
     flushPersistNow();
