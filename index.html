@@ -371,16 +371,20 @@
 </div><script id="dati-iniziali" type="application/json">{"2026-09-01":{"tipo":"ferie","inizio":"","fine":"","oreTotali":"6"},"2026-09-02":{"tipo":"ferie","inizio":"","fine":"","oreTotali":"6"},"2026-09-03":{"tipo":null,"inizio":"","fine":"","oreTotali":"6,5"},"2026-09-04":{"tipo":null,"inizio":"","fine":"","oreTotali":"7"},"2026-09-05":{"tipo":null,"inizio":"","fine":"","oreTotali":"7,5"},"2026-09-06":{"tipo":null,"inizio":"","fine":"","oreTotali":"5,5"},"2026-09-07":{"tipo":null,"inizio":"","fine":"","oreTotali":"5,5"},"2026-09-08":{"tipo":null,"inizio":"","fine":"","oreTotali":"9"},"2026-09-09":{"tipo":null,"inizio":"","fine":"","oreTotali":"7"},"2026-09-10":{"tipo":null,"inizio":"","fine":"","oreTotali":"7,5"},"2026-09-11":{"tipo":null,"inizio":"","fine":"","oreTotali":"7"},"2026-09-12":{"tipo":null,"inizio":"","fine":"","oreTotali":"7"},"2026-09-13":{"tipo":"ferie","inizio":"","fine":"","oreTotali":"5,5"},"2026-09-14":{"tipo":"ferie","inizio":"","fine":"","oreTotali":"6"},"2026-09-15":{"tipo":"off","inizio":"","fine":"","oreTotali":""},"2026-09-16":{"tipo":"ferie","inizio":"","fine":"","oreTotali":"6"},"2026-09-17":{"tipo":"ferie","inizio":"","fine":"","oreTotali":"6"},"2026-09-18":{"tipo":"ferie","inizio":"","fine":"","oreTotali":"7"},"2026-09-20":{"tipo":"ferie","inizio":"","fine":"","oreTotali":"5,5"},"2026-09-19":{"tipo":"ferie","inizio":"","fine":"","oreTotali":"7"},"2026-09-21":{"tipo":"off","inizio":"","fine":"","oreTotali":""},"2026-09-22":{"tipo":null,"inizio":"18:30","fine":"00:30","oreTotali":""},"2026-09-23":{"tipo":"mattina","inizio":"08:00","fine":"18:00","oreTotali":""},"2026-09-24":{"tipo":null,"inizio":"18:30","fine":"00:30","oreTotali":""},"2026-09-25":{"tipo":null,"inizio":"18:00","fine":"01:00","oreTotali":""},"2026-09-26":{"tipo":null,"inizio":"18:00","fine":"01:30","oreTotali":""},"2026-09-27":{"tipo":null,"inizio":"18:00","fine":"00:00","oreTotali":""},"2026-09-30":{"tipo":"mattina","inizio":"","fine":"","oreTotali":""},"2026-09-28":{"tipo":"off","inizio":"","fine":"","oreTotali":""},"2026-09-29":{"tipo":null,"inizio":"18:30","fine":"00:30","oreTotali":""},"2026-10-04":{"tipo":"ferie","inizio":"18:00","fine":"00:00","oreTotali":""},"2026-10-18":{"tipo":"ferie","inizio":"18:00","fine":"00","oreTotali":""},"2026-10-05":{"tipo":"off","inizio":"","fine":"","oreTotali":""},"2026-10-19":{"tipo":"off","inizio":"","fine":"","oreTotali":""}}</script><script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script><script id="main">
 (function(){
   var firebaseConfig = {
-    apiKey: "AIzaSyBf_L7I710y1uCfqexrRS2A7fa1AIeQdPM",
-    authDomain: "spesa-b6ed3.firebaseapp.com",
-    projectId: "spesa-b6ed3",
-    storageBucket: "spesa-b6ed3.firebasestorage.app",
-    messagingSenderId: "85578996832",
-    appId: "1:85578996832:web:97e9f2926410e13cda3705"
+    apiKey: "AIzaSyBXxO357W4gcsUiRjLTH2wU50lHZdlu92s",
+    authDomain: "registro-ore-4fc24.firebaseapp.com",
+    projectId: "registro-ore-4fc24",
+    storageBucket: "registro-ore-4fc24.firebasestorage.app",
+    messagingSenderId: "1051120432221",
+    appId: "1:1051120432221:web:087104191284ce87c9c9b4"
   };
   var PROJECT_ID = firebaseConfig.projectId;
   var API_KEY = firebaseConfig.apiKey;
   var API_BASE = 'https://firestore.googleapis.com/v1/projects/' + PROJECT_ID + '/databases/(default)/documents';
+  // vecchio progetto condiviso «spesa»: si legge SOLO per copiare le ore una volta, non si scrive mai
+  var OLD_BASE = 'https://firestore.googleapis.com/v1/projects/spesa-b6ed3/databases/(default)/documents';
+  var OLD_KEY = 'AIzaSyBf_L7I710y1uCfqexrRS2A7fa1AIeQdPM';
+  var migrazioneInSospeso = false;
   var DOC_PATH = '/ore/dati';
   var CODICE_TOMMI = 'tommi-principale';
   var codiceArea = null;
@@ -499,6 +503,7 @@
     clearTimeout(pubTimer);
     pubTimer = null;
     if(!pendingSave) return;
+    if(migrazioneInSospeso) return; // finché le vecchie ore non sono state copiate non si scrive nulla
     pendingSave = false;
     var payload = { fields: { json: { stringValue: JSON.stringify(data) } } };
     fsFetch(DOC_PATH + '?updateMask.fieldPaths=json', {
@@ -535,28 +540,79 @@
     }).catch(function(err){
       loaded = true;
       if(err && err.code === 'not-found'){
-        // primo avvio: non esiste ancora nessun dato remoto sul database condiviso.
-        // Se abbiamo dati iniziali incorporati nella pagina (dal vecchio artefatto)
-        // e non ci sono ancora dati locali, li usiamo come semina una tantum.
-        if(codiceArea === CODICE_TOMMI && !seeded && Object.keys(data).length === 0){
-          var iniz = document.getElementById('dati-iniziali');
-          if(iniz && iniz.textContent){
-            try{
-              var parsedIniz = JSON.parse(iniz.textContent);
-              if(parsedIniz && typeof parsedIniz === 'object' && Object.keys(parsedIniz).length){
-                data = parsedIniz;
-                renderCalendar();
-                seeded = true;
-                persist();
-              }
-            }catch(e){ /* ignore */ }
+        // primo avvio sul nuovo progetto: prima si copiano le ore dal vecchio server
+        migrazioneInSospeso = true;
+        migraDaVecchio().then(function(esito){
+          if(esito.trovato){
+            var parsedOld = esito.dati;
+            data = Object.assign({}, parsedOld, data); // le modifiche appena fatte hanno la precedenza
+            migrazioneInSospeso = false;
+            seeded = true;
+            renderCalendar();
+            persist();
+            flushPublish();
+            avvisaCopia(Object.keys(parsedOld).length);
+          } else {
+            // nel vecchio server non c'è niente: si parte dai dati iniziali, come prima
+            migrazioneInSospeso = false;
+            seminaIniziali();
           }
-        }
-        if(saveState === 'idle'){ saveState = 'ok'; updateSaveStatus(); }
+        }).catch(function(){
+          // vecchio server non raggiungibile: non si scrive niente, si riprova al prossimo giro
+          saveState = 'error';
+          updateSaveStatus();
+        });
         return;
       }
       if(saveState === 'idle'){ saveState = 'error'; updateSaveStatus(); }
     });
+  }
+
+  // legge dal vecchio progetto (solo lettura) lo stesso documento di questa area
+  function migraDaVecchio(){
+    var url = OLD_BASE + DOC_PATH + '?key=' + OLD_KEY;
+    var ctrl = new AbortController();
+    var timer = setTimeout(function(){ ctrl.abort(); }, 12000);
+    return fetch(url, { signal: ctrl.signal }).then(function(res){
+      clearTimeout(timer);
+      if(res.status === 404) return { trovato: false };
+      if(!res.ok) throw new Error('vecchio-' + res.status);
+      return res.json().then(function(doc){
+        var raw = doc && doc.fields && doc.fields.json && doc.fields.json.stringValue;
+        if(!raw) return { trovato: false };
+        var parsed = JSON.parse(raw);
+        if(!parsed || typeof parsed !== 'object') throw new Error('vecchio-formato');
+        return { trovato: true, dati: parsed };
+      });
+    });
+  }
+
+  function avvisaCopia(n){
+    setTimeout(function(){
+      if(badgeEl && badgeTextEl){
+        badgeEl.className = 'save-badge show ok';
+        badgeTextEl.textContent = 'Copiate ' + n + ' giornate dal vecchio server ✓';
+        setTimeout(function(){ badgeEl.classList.remove('show'); }, 8000);
+      }
+    }, 2500);
+  }
+
+  function seminaIniziali(){
+    if(codiceArea === CODICE_TOMMI && !seeded && Object.keys(data).length === 0){
+      var iniz = document.getElementById('dati-iniziali');
+      if(iniz && iniz.textContent){
+        try{
+          var parsedIniz = JSON.parse(iniz.textContent);
+          if(parsedIniz && typeof parsedIniz === 'object' && Object.keys(parsedIniz).length){
+            data = parsedIniz;
+            renderCalendar();
+            seeded = true;
+            persist();
+          }
+        }catch(e){ /* ignore */ }
+      }
+    }
+    if(saveState === 'idle'){ saveState = 'ok'; updateSaveStatus(); }
   }
 
   var pollTimer = null;
@@ -566,7 +622,7 @@
     pollTimer = setInterval(function(){
       // non ricarichiamo da remoto se ci sono modifiche locali non ancora salvate,
       // per non perdere quello che si sta scrivendo
-      if(pendingSave || saveState === 'pending') return;
+      if((pendingSave || saveState === 'pending') && !migrazioneInSospeso) return;
       if(document.activeElement && document.activeElement.tagName === 'INPUT') return;
       caricaRemoto();
     }, 6000);
