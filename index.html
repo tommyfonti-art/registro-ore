@@ -1,4 +1,4 @@
-<!doctype html><html lang="it"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"><title>Registro Ore</title><link rel="apple-touch-icon" href="icon.png?v=2"><link rel="icon" href="icon.png?v=2"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Ore"><meta name="theme-color" content="#7C9A76"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet"><style id="css">
+<!doctype html><html lang="it"><head><meta name="versione-app" content="2026-10-24b"><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"><title>Registro Ore</title><link rel="apple-touch-icon" href="icon.png?v=2"><link rel="icon" href="icon.png?v=2"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Ore"><meta name="theme-color" content="#7C9A76"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet"><style id="css">
   :root{
     --paper:#F2E8D3;
     --ink:#211F1A;
@@ -1292,24 +1292,28 @@
       }
     }
   });
-  /* aggiornamento automatico: se su GitHub c'è una versione nuova dell'app, la ricarico da sola */
+  /* aggiornamento automatico: se su GitHub c'è una versione nuova dell'app, la ricarico da sola.
+     La versione è nel tag <meta name="versione-app"> in alto: va cambiata a ogni modifica. */
+  var verMia = (document.querySelector('meta[name="versione-app"]')||{}).content;
+  var verInCorso = false;
   function controllaVersione(){
     try{
-      if(!window.fetch || location.protocol.indexOf('http')!==0) return;
+      if(!verMia || !window.fetch || location.protocol.indexOf('http')!==0 || verInCorso || document.hidden) return;
       var ae = document.activeElement;
-      if(ae && (ae.tagName==='INPUT' || ae.tagName==='TEXTAREA')) return;
-      fetch(location.pathname + '?v=' + Date.now(), { cache:'no-store' }).then(function(r){ return r.ok ? r.text() : ''; }).then(function(t){
-        if(!t || t.indexOf('Registro Ore')<0) return;
-        var h = 0; for(var i=0;i<t.length;i++){ h = ((h<<5)-h + t.charCodeAt(i))|0; }
-        var old = null; try{ old = localStorage.getItem('ore_ver'); }catch(e){}
-        try{ localStorage.setItem('ore_ver', String(h)); }catch(e){}
-        if(old !== null && old !== String(h)){
-          commitActiveInput(); flushPersistNow();
-          setTimeout(function(){ location.reload(); }, 400);
-        }
-      }).catch(function(){});
+      if(ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) return;
+      verInCorso = true;
+      fetch(location.pathname + '?c=' + Date.now(), { cache:'no-store' }).then(function(r){ return r.ok ? r.text() : ''; }).then(function(t){
+        verInCorso = false;
+        var m = t && t.match(/<meta name="versione-app" content="([^"]+)"/);
+        if(!m || m[1] === verMia) return;
+        var chiave = 'agg_' + m[1];
+        try{ if(sessionStorage.getItem(chiave)) return; sessionStorage.setItem(chiave, '1'); }catch(e){}
+        commitActiveInput(); flushPersistNow();
+        setTimeout(function(){ location.replace(location.pathname + '?v=' + encodeURIComponent(m[1])); }, 500);
+      }).catch(function(){ verInCorso = false; });
     }catch(e){}
   }
+  setInterval(controllaVersione, 300000);
   setTimeout(controllaVersione, 1500);
   document.addEventListener('visibilitychange', function(){ if(!document.hidden) setTimeout(controllaVersione, 800); });
 
