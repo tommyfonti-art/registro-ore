@@ -148,7 +148,7 @@
     gap:6px;
   }
   .row.is-today{ box-shadow:inset 0 0 0 3px var(--ink); border-left-color:var(--ink); scroll-margin-top:90px; }
-  .row.is-today:not(.has-ferie):not(.has-off):not(.has-mattina){ background:#FBE8A6; }
+  .row.is-today{ background:#FBE8A6; }
   .row.is-today .date .num{ font-size:20px; font-weight:700; }
   .today-tag{ display:inline-block; margin-top:2px; padding:1px 6px; border-radius:9px; background:var(--ink); color:var(--paper); font-size:10px; font-weight:700; letter-spacing:.6px; }
   .today-btn{
@@ -158,10 +158,9 @@
     font-family:'IBM Plex Mono', monospace; font-size:14px; font-weight:700;
     box-shadow:0 4px 14px rgba(0,0,0,0.3);
   }
-  .row.has-lavorato{ border-left-color:var(--teal); }
-  .row.has-ferie{ border-left-color:var(--terracotta); background:var(--terracotta-tint); }
-  .row.has-off{ border-left-color:var(--off); background:var(--off-tint); }
-  .row.has-mattina{ border-left-color:var(--mattina); background:var(--mattina-tint); }
+  /* barra a sinistra sempre dello stesso colore (verde) quando il giorno è segnato; niente sfondo colorato per ferie/off/mattina: si vede solo la spunta */
+  .row.has-lavorato, .row.has-ferie, .row.has-off, .row.has-mattina{ border-left-color:var(--teal); }
+  .row.is-today, .row.is-today.has-lavorato, .row.is-today.has-ferie, .row.is-today.has-off, .row.is-today.has-mattina{ border-left-color:var(--ink); }
 
   .row .date{ width:52px; flex-shrink:0; padding-top:1px; }
   .row .date .dow{ display:block; font-size:11px; color:var(--ink-soft); text-transform:capitalize; font-weight:500; }
@@ -169,19 +168,13 @@
 
   .row .mid{ flex:1; min-width:0; }
   .row .result{ width:56px; flex-shrink:0; text-align:right; font-family:'Fraunces', serif; font-weight:600; font-size:15.5px; padding-top:1px; }
-  .row.has-ferie .result{ color:var(--terracotta); }
-  .row.has-off .result{ color:var(--off); }
-  .row.has-mattina .result{ color:var(--mattina); }
-  .row.has-lavorato .result{ color:var(--teal); }
+  .row.has-lavorato .result, .row.has-ferie .result, .row.has-off .result, .row.has-mattina .result{ color:var(--teal); }
 
   /* edit-mode controls */
   .edit-line{ display:flex; flex-direction:column; gap:6px; flex:1; min-width:0; }
   .edit-top{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
   .status-chk{ display:flex; align-items:center; gap:4px; font-size:11.5px; font-weight:500; color:var(--ink-soft); flex-shrink:0; }
-  .status-chk input{ width:16px; height:16px; margin:0; }
-  .status-chk.ferie-chk input{ accent-color:var(--terracotta); }
-  .status-chk.off-chk input{ accent-color:var(--off); }
-  .status-chk.mattina-chk input{ accent-color:var(--mattina); }
+  .status-chk input{ width:18px; height:18px; margin:0; accent-color:var(--ink); }
   .edit-bottom{ display:flex; align-items:center; gap:8px; }
   .inputs{ display:flex; align-items:center; gap:8px; flex:1; min-width:0; }
   .time-group{ display:flex; align-items:center; gap:6px; }
@@ -209,14 +202,11 @@
     background:none; border:none; color:var(--ink-soft); font-size:14px; cursor:pointer;
     padding:2px 4px; flex-shrink:0; visibility:hidden;
   }
-  .row.has-lavorato .clear-btn, .row.has-ferie .clear-btn, .row.has-off .clear-btn{ visibility:visible; }
+  .row.has-lavorato .clear-btn, .row.has-ferie .clear-btn, .row.has-off .clear-btn, .row.has-mattina .clear-btn{ visibility:visible; }
 
   /* static (summary/screenshot) line */
   .static-line{ display:none; font-size:13.5px; font-weight:500; color:var(--ink); }
   .static-line .tag{ font-weight:600; }
-  .static-line .tag.tag-ferie{ color:var(--terracotta); }
-  .static-line .tag.tag-off{ color:var(--off); }
-  .static-line .tag.tag-mattina{ color:var(--mattina); }
   .static-line .muted{ color:var(--ink-soft); font-weight:400; }
 
   body.summary-mode .edit-line{ display:none; }
@@ -274,9 +264,6 @@
     .edit-line{ display:none; }
     .static-line{ display:block; }
     .row{ break-inside:avoid; border-left-width:3px; }
-    .row.has-ferie{ background:var(--terracotta-tint) !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-    .row.has-off{ background:var(--off-tint) !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-    .row.has-mattina{ background:var(--mattina-tint) !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   }
 </style></head><body><div id="page">
 <div class="wrap">
