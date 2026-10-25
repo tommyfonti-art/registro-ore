@@ -700,6 +700,10 @@
   }
 
   function formatDec(mins){
+    return (mins/60).toFixed(1).replace('.', ',');
+  }
+
+  function formatCent(mins){
     return (mins/60).toFixed(2).replace('.', ',');
   }
 
@@ -883,7 +887,7 @@
       num.disabled = !!oreDisattivate;
       oreGroup.classList.toggle('is-disabled', !!oreDisattivate);
 
-      resultEl.textContent = isOff ? '0,00 h' : (mins>0 ? (formatDec(mins)+' h') : '—');
+      resultEl.textContent = isOff ? '0,00 h' : (mins>0 ? (formatCent(mins)+' h') : '—');
 
       var orarioTesto = (e && (e.inizio||e.fine)) ? (e.inizio||'—')+'–'+(e.fine||'—') : '';
       var dettaglio = isOff ? '' : (totaleAttivo ? formatDec(mins)+' h' : orarioTesto);
@@ -948,7 +952,7 @@
       var attivo = num.value !== '';
       t1.disabled = attivo; t2.disabled = attivo;
       timeGroup.classList.toggle('is-disabled', attivo);
-      resultEl.textContent = (entryMinutes(en)>0) ? (formatDec(entryMinutes(en))+' h') : '—';
+      resultEl.textContent = (entryMinutes(en)>0) ? (formatCent(entryMinutes(en))+' h') : '—';
       persist(); updateSummary();
     });
     num.addEventListener('change', function(){
