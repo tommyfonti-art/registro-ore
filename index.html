@@ -700,7 +700,7 @@
   }
 
   function formatDec(mins){
-    return (mins/60).toFixed(1).replace('.', ',');
+    return (mins/60).toFixed(2).replace('.', ',');
   }
 
   function ensureEntry(ds){
@@ -883,7 +883,7 @@
       num.disabled = !!oreDisattivate;
       oreGroup.classList.toggle('is-disabled', !!oreDisattivate);
 
-      resultEl.textContent = isOff ? '0,0 h' : (mins>0 ? (formatDec(mins)+' h') : '—');
+      resultEl.textContent = isOff ? '0,00 h' : (mins>0 ? (formatDec(mins)+' h') : '—');
 
       var orarioTesto = (e && (e.inizio||e.fine)) ? (e.inizio||'—')+'–'+(e.fine||'—') : '';
       var dettaglio = isOff ? '' : (totaleAttivo ? formatDec(mins)+' h' : orarioTesto);
