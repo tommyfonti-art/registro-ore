@@ -1,4 +1,4 @@
-<!doctype html><html lang="it"><head><meta name="versione-app" content="2026-10-27a"><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"><title>Registro Ore</title><link rel="apple-touch-icon" href="icon.png?v=2"><link rel="icon" href="icon.png?v=2"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Ore"><meta name="theme-color" content="#7C9A76"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet"><style id="css">
+<!doctype html><html lang="it"><head><meta name="versione-app" content="2026-11-01a"><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"><title>Registro Ore</title><link rel="apple-touch-icon" href="icon.png?v=2"><link rel="icon" href="icon.png?v=2"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Ore"><meta name="theme-color" content="#7C9A76"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet"><style id="css">
   :root{
     --paper:#F2E8D3;
     --ink:#211F1A;
@@ -62,6 +62,8 @@
     display:block; width:100%; margin-top:6px; font-family:'IBM Plex Mono', monospace; font-size:15px;
     border:1px solid var(--rule-strong); background:#fff; color:var(--ink); padding:8px 10px; border-radius:6px;
   }
+  .paga-risultato{ margin:0 0 14px; font-size:12.5px; color:var(--ink-soft); line-height:1.7; }
+  .paga-risultato .paga-tot{ display:block; font-family:'Fraunces', serif; font-size:26px; font-weight:600; color:var(--ink); margin-top:4px; }
   .btn-ob{
     display:block; width:100%; text-align:center; padding:11px 12px; margin-bottom:10px;
     border:1px solid var(--rule-strong); border-radius:8px; background:#fff; color:var(--ink);
@@ -323,6 +325,7 @@
 
   <div class="footer-actions">
     <button class="link-btn" id="exportPdf">Esporta in PDF</button>
+    <button class="link-btn" id="btnPaga">Calcola busta paga</button>
     <button class="link-btn" id="exportCsv">Esporta il mese in CSV</button>
     <button class="link-btn" id="exportBackup">Salva backup dati</button>
     <button class="link-btn" id="importBackup">Carica backup dati</button>
@@ -341,6 +344,17 @@
     <div class="ob-sep">oppure</div>
     <label>Il tuo nome (facoltativo)<input id="obNome" type="text" placeholder="Es. Marco" autocomplete="off"></label>
     <button id="obNuovo" class="btn-ob" type="button">Crea la mia area personale, vuota</button>
+  </div>
+</div>
+
+<div class="overlay" id="pagaPanel">
+  <div class="overlay-card">
+    <h2>Calcola busta paga</h2>
+    <p id="pagaMese">—</p>
+    <label>Quanto prendi all'ora (euro)<input id="pagaOraria" type="text" inputmode="decimal" placeholder="Es. 9,50" autocomplete="off"></label>
+    <div class="paga-risultato" id="pagaRisultato"></div>
+    <p>È una stima: ore del mese per paga oraria, senza trattenute.</p>
+    <button id="pagaClose" class="btn-ob primary" type="button">Chiudi</button>
   </div>
 </div>
 
@@ -1111,8 +1125,11 @@
         else if(e.tipo==='mattina'){ giorniMattina++; lavMins+=mins; }
         else { lavMins+=mins; }
       }
-      doc.setFontSize(11);
-      doc.text('Totale ore: '+formatDec(lavMins+ferieMins)+' h    lavorate: '+formatDec(lavMins)+' h    ferie: '+formatDec(ferieMins)+' h ('+giorniFerie+' gg)    mattina: '+giorniMattina+' gg    off: '+giorniOff+' gg', marginL, yPos);
+      doc.setFont('helvetica','bold'); doc.setFontSize(16);
+      doc.text('Totale ore: '+formatDec(lavMins+ferieMins)+' h', marginL, yPos);
+      yPos += 20;
+      doc.setFont('helvetica','normal'); doc.setFontSize(11);
+      doc.text('lavorate: '+formatDec(lavMins)+' h    ferie: '+formatDec(ferieMins)+' h ('+giorniFerie+' gg)    mattina: '+giorniMattina+' gg    off: '+giorniOff+' gg', marginL, yPos);
       yPos += 26;
 
       doc.setFont('helvetica','bold'); doc.setFontSize(10);
@@ -1230,6 +1247,33 @@
     aggiornaTitolo();
     initStorage();
   });
+
+  var pagaEl = document.getElementById('pagaPanel');
+  var pagaInput = document.getElementById('pagaOraria');
+  function euro(n){ return n.toFixed(2).replace('.', ',') + ' €'; }
+  function leggiPagaSalvata(){ try{ return localStorage.getItem('registroOre_pagaOraria') || ''; }catch(err){ return ''; } }
+  function salvaPaga(v){ try{ localStorage.setItem('registroOre_pagaOraria', v); }catch(err){} }
+  function aggiornaPaga(){
+    var t = monthTotals(current.y, current.m);
+    var oreLav = t.lavMins/60, oreFerie = t.ferieMins/60;
+    var testo = pagaInput.value.replace(',', '.').trim();
+    var paga = parseFloat(testo);
+    var box = document.getElementById('pagaRisultato');
+    if(!testo || isNaN(paga) || paga < 0){ box.innerHTML = 'Scrivi quanto prendi all\'ora per vedere il calcolo.'; return; }
+    salvaPaga(pagaInput.value.trim());
+    box.innerHTML = 'Lavorate: ' + formatDec(t.lavMins) + ' h → ' + euro(oreLav*paga) + '<br>' +
+      'Ferie: ' + formatDec(t.ferieMins) + ' h → ' + euro(oreFerie*paga) +
+      '<span class="paga-tot">' + euro((oreLav+oreFerie)*paga) + '</span>' +
+      'importo lordo del mese (' + formatDec(t.lavMins+t.ferieMins) + ' h)';
+  }
+  document.getElementById('btnPaga').addEventListener('click', function(){
+    document.getElementById('pagaMese').textContent = monthNames[current.m] + ' ' + current.y;
+    pagaInput.value = leggiPagaSalvata();
+    aggiornaPaga();
+    pagaEl.style.display = 'flex';
+  });
+  pagaInput.addEventListener('input', aggiornaPaga);
+  document.getElementById('pagaClose').addEventListener('click', function(){ pagaEl.style.display = 'none'; });
 
   document.getElementById('btnSettings').addEventListener('click', function(){
     document.getElementById('setNome').value = nomeSalvato();
