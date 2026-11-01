@@ -1,4 +1,4 @@
-<!doctype html><html lang="it"><head><meta name="versione-app" content="2026-11-01a"><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"><title>Registro Ore</title><link rel="apple-touch-icon" href="icon.png?v=2"><link rel="icon" href="icon.png?v=2"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Ore"><meta name="theme-color" content="#7C9A76"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet"><style id="css">
+<!doctype html><html lang="it"><head><meta name="versione-app" content="2026-11-01b"><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"><title>Registro Ore</title><link rel="apple-touch-icon" href="icon.png?v=2"><link rel="icon" href="icon.png?v=2"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Ore"><meta name="theme-color" content="#7C9A76"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet"><style id="css">
   :root{
     --paper:#F2E8D3;
     --ink:#211F1A;
@@ -62,6 +62,13 @@
     display:block; width:100%; margin-top:6px; font-family:'IBM Plex Mono', monospace; font-size:15px;
     border:1px solid var(--rule-strong); background:#fff; color:var(--ink); padding:8px 10px; border-radius:6px;
   }
+  .paga-extra-titolo{ font-size:11.5px; color:var(--ink-soft); margin:0 0 6px; }
+  .paga-extra{ display:flex; gap:8px; margin-bottom:14px; }
+  .paga-chip{
+    flex:1; padding:10px 6px; border:1px solid var(--rule-strong); border-radius:8px; background:#fff;
+    color:var(--ink-soft); font-family:'IBM Plex Mono', monospace; font-size:12px; font-weight:600; cursor:pointer;
+  }
+  .paga-chip[aria-pressed="true"]{ background:var(--teal); border-color:var(--teal); color:#F2FBF6; }
   .paga-risultato{ margin:0 0 14px; font-size:12.5px; color:var(--ink-soft); line-height:1.7; }
   .paga-risultato .paga-tot{ display:block; font-family:'Fraunces', serif; font-size:26px; font-weight:600; color:var(--ink); margin-top:4px; }
   .btn-ob{
@@ -352,8 +359,13 @@
     <h2>Calcola busta paga</h2>
     <p id="pagaMese">—</p>
     <label>Quanto prendi all'ora (euro)<input id="pagaOraria" type="text" inputmode="decimal" placeholder="Es. 9,50" autocomplete="off"></label>
+    <div class="paga-extra-titolo">Mensilità extra (si sommano al mese)</div>
+    <div class="paga-extra">
+      <button type="button" class="paga-chip" id="pagaTredicesima" aria-pressed="false">Tredicesima</button>
+      <button type="button" class="paga-chip" id="pagaQuattordicesima" aria-pressed="false">Quattordicesima</button>
+    </div>
     <div class="paga-risultato" id="pagaRisultato"></div>
-    <p>È una stima: ore del mese per paga oraria, senza trattenute.</p>
+    <p>È una stima: ore del mese per paga oraria. Ogni mensilità extra attiva aggiunge il totale del mese diviso 12. Senza trattenute.</p>
     <button id="pagaClose" class="btn-ob primary" type="button">Chiudi</button>
   </div>
 </div>
@@ -1261,14 +1273,37 @@
     var box = document.getElementById('pagaRisultato');
     if(!testo || isNaN(paga) || paga < 0){ box.innerHTML = 'Scrivi quanto prendi all\'ora per vedere il calcolo.'; return; }
     salvaPaga(pagaInput.value.trim());
-    box.innerHTML = 'Lavorate: ' + formatDec(t.lavMins) + ' h → ' + euro(oreLav*paga) + '<br>' +
-      'Ferie: ' + formatDec(t.ferieMins) + ' h → ' + euro(oreFerie*paga) +
-      '<span class="paga-tot">' + euro((oreLav+oreFerie)*paga) + '</span>' +
+    var base = (oreLav+oreFerie)*paga;
+    var nExtra = (extra.tredicesima ? 1 : 0) + (extra.quattordicesima ? 1 : 0);
+    var quotaExtra = base * nExtra / 12;
+    var html = 'Lavorate: ' + formatDec(t.lavMins) + ' h → ' + euro(oreLav*paga) + '<br>' +
+      'Ferie: ' + formatDec(t.ferieMins) + ' h → ' + euro(oreFerie*paga) + '<br>' +
+      'Totale ore × paga: ' + euro(base) + '<br>';
+    if(nExtra > 0){
+      html += (nExtra === 2 ? 'Tredicesima + quattordicesima' : (extra.tredicesima ? 'Tredicesima' : 'Quattordicesima')) +
+        ' (' + euro(base) + ' × ' + nExtra + ' ÷ 12): ' + euro(quotaExtra) + '<br>';
+    }
+    html += '<span class="paga-tot">' + euro(base + quotaExtra) + '</span>' +
       'importo lordo del mese (' + formatDec(t.lavMins+t.ferieMins) + ' h)';
+    box.innerHTML = html;
   }
+  var extra = leggiExtraSalvate();
+  function leggiExtraSalvate(){
+    try{ var o = JSON.parse(localStorage.getItem('registroOre_pagaExtra') || '{}'); return { tredicesima: !!o.tredicesima, quattordicesima: !!o.quattordicesima }; }
+    catch(err){ return { tredicesima:false, quattordicesima:false }; }
+  }
+  function salvaExtra(){ try{ localStorage.setItem('registroOre_pagaExtra', JSON.stringify(extra)); }catch(err){} }
+  function mostraChip(){
+    document.getElementById('pagaTredicesima').setAttribute('aria-pressed', extra.tredicesima ? 'true' : 'false');
+    document.getElementById('pagaQuattordicesima').setAttribute('aria-pressed', extra.quattordicesima ? 'true' : 'false');
+  }
+  document.getElementById('pagaTredicesima').addEventListener('click', function(){ extra.tredicesima = !extra.tredicesima; salvaExtra(); mostraChip(); aggiornaPaga(); });
+  document.getElementById('pagaQuattordicesima').addEventListener('click', function(){ extra.quattordicesima = !extra.quattordicesima; salvaExtra(); mostraChip(); aggiornaPaga(); });
   document.getElementById('btnPaga').addEventListener('click', function(){
     document.getElementById('pagaMese').textContent = monthNames[current.m] + ' ' + current.y;
     pagaInput.value = leggiPagaSalvata();
+    extra = leggiExtraSalvate();
+    mostraChip();
     aggiornaPaga();
     pagaEl.style.display = 'flex';
   });
